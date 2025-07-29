@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Classification Optimization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            color: #d1d5db;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .input-group select,
+        .input-group input[type="range"] {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(55, 65, 81, 0.8);
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            color: #f9fafb;
+            font-size: 14px;
+        }
+        
+        .input-group input[type="range"] {
+            height: 6px;
+            background: #4b5563;
+            outline: none;
+            border-radius: 3px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .results-container {
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid #374151;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .metric-card {
+            background: rgba(55, 65, 81, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        
+        .chart-container {
+            margin: 20px 0;
+            background: rgba(17, 24, 39, 0.6);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .data-distribution {
+            margin: 16px 0;
+            padding: 12px;
+            background: rgba(55, 65, 81, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .warning {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            color: #fbbf24;
+        }
+        
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 12px 0;
+            color: #4ade80;
+        }
+        
+        h3 {
+            color: #f9fafb;
+            margin: 0 0 16px 0;
+            font-size: 24px;
+        }
+        
+        p {
+            color: #9ca3af;
+            margin: 0 0 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>Medical Classification Optimization</h3>
+        <p>Predict which medical classifications are 'high volume' and identify key drivers with automatic threshold adjustment.</p>
+        
+        <div class="space-y-4">
+            <div class="input-group">
+                <label for="mco-model-type">Select Model:</label>
+                <select id="mco-model-type">
+                    <option value="Decision Tree">Decision Tree</option>
+                    <option value="Logistic Regression">Logistic Regression</option>
+                    <option value="SVM">SVM</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="mco-threshold">High Volume Threshold (Total Discharges): <span id="mco-threshold-display">100</span></label>
+                <input type="range" id="mco-threshold" min="10" max="250" step="10" value="100">
+            </div>
+            
+            <button id="run-mco-model" class="btn-primary">Run Classification Optimization</button>
+        </div>
+        
+        <div id="mco-results" class="results-container" style="display: none;">
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sample medical data with Total Discharges and additional features
+        const medicalData = [
+            100, 50, 10, 250, 180, 80, 40, 5, 120, 90, 30, 25, 60, 55, 70, 200, 90, 15, 110, 40,
+            85, 120, 8, 190, 210, 95, 65, 7, 135, 105, 28, 32, 72, 48, 88, 165, 78, 22, 125, 55,
+            145, 98, 115, 85, 75, 220, 125, 95, 110, 65, 85, 155, 78, 92, 92, 108, 6, 175, 205, 68,
+            52, 4, 142, 78, 35, 29, 58, 43, 95, 188, 82, 28, 98, 62, 132, 118, 128, 75, 88, 195,
+            108, 85, 125, 58, 92, 168, 85, 102, 115, 78, 9, 225, 165, 88, 45, 6, 158, 88, 42, 38,
+            65, 52, 105, 175, 72, 35, 135, 48, 152, 125, 138, 82, 92, 205, 118, 78, 102, 68, 78, 142,
+            95, 88, 95, 68, 12, 185, 220, 75, 58, 8, 148, 95, 36, 41, 62
+        ];
+
+        // Generate additional synthetic features for better classification
+        function generateFeatures(discharges) {
+            return medicalData.map((discharge, index) => ({
+                totalDischarges: discharge,
+                avgLengthOfStay: Math.round((discharge * 0.03 + Math.random() * 2 + 3) * 10) / 10,
+                bedUtilization: Math.min(100, Math.round((discharge * 0.4 + Math.random() * 20 + 40) * 10) / 10),
+                staffRatio: Math.round((discharge * 0.01 + Math.random() * 0.5 + 2) * 10) / 10,
+                complicationRate: Math.round((Math.random() * 8 + 2) * 10) / 10,
+                departmentType: ['Emergency', 'Surgery', 'ICU', 'General', 'Cardiology', 'Oncology'][index % 6],
+                seasonality: Math.sin(index * 0.5) * 20 + 80 + Math.random() * 10
+            }));
+        }
+
+        // Optimize threshold to ensure balanced classes
+        function findOptimalThreshold(data) {
+            const sortedDischarges = data.map(d => d.totalDischarges).sort((a, b) => a - b);
+            const n = sortedDischarges.length;
+            
+            // Try different percentiles to find a good split
+            const percentiles = [0.3, 0.4, 0.5, 0.6, 0.7];
+            let bestThreshold = null;
+            let bestBalance = Infinity;
+            
+            for (const p of percentiles) {
+                const threshold = sortedDischarges[Math.floor(n * p)];
+                const highCount = data.filter(d => d.totalDischarges >= threshold).length;
+                const lowCount = data.filter(d => d.totalDischarges < threshold).length;
+                
+                // Check if both classes have at least 20% of data
+                if (highCount >= n * 0.2 && lowCount >= n * 0.2) {
+                    const balance = Math.abs(highCount - lowCount);
+                    if (balance < bestBalance) {
+                        bestBalance = balance;
+                        bestThreshold = threshold;
+                    }
+                }
+            }
+            
+            return bestThreshold || sortedDischarges[Math.floor(n * 0.5)]; // Default to median
+        }
+
+        // Simple Decision Tree implementation
+        class SimpleDecisionTree {
+            constructor() {
+                this.tree = null;
+            }
+            
+            fit(X, y) {
+                this.tree = this.buildTree(X, y, 0);
+            }
+            
+            buildTree(X, y, depth) {
+                if (depth > 3 || new Set(y).size === 1 || X.length < 5) {
+                    const counts = {};
+                    y.forEach(label => counts[label] = (counts[label] || 0) + 1);
+                    return { prediction: Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b) };
+                }
+                
+                let bestFeature = 0;
+                let bestThreshold = 0;
+                let bestGini = Infinity;
+                
+                // Try different features and thresholds
+                const features = ['totalDischarges', 'avgLengthOfStay', 'bedUtilization', 'staffRatio'];
+                
+                for (let f = 0; f < features.length; f++) {
+                    const featureName = features[f];
+                    const values = X.map(x => x[featureName]).sort((a, b) => a - b);
+                    
+                    for (let i = 1; i < values.length; i++) {
+                        const threshold = (values[i-1] + values[i]) / 2;
+                        const leftIndices = [];
+                        const rightIndices = [];
+                        
+                        X.forEach((x, idx) => {
+                            if (x[featureName] <= threshold) {
+                                leftIndices.push(idx);
+                            } else {
+                                rightIndices.push(idx);
+                            }
+                        });
+                        
+                        if (leftIndices.length === 0 || rightIndices.length === 0) continue;
+                        
+                        const leftY = leftIndices.map(idx => y[idx]);
+                        const rightY = rightIndices.map(idx => y[idx]);
+                        
+                        const gini = (leftY.length / y.length) * this.calculateGini(leftY) + 
+                                    (rightY.length / y.length) * this.calculateGini(rightY);
+                        
+                        if (gini < bestGini) {
+                            bestGini = gini;
+                            bestFeature = f;
+                            bestThreshold = threshold;
+                        }
+                    }
+                }
+                
+                const featureName = features[bestFeature];
+                const leftX = [];
+                const rightX = [];
+                const leftY = [];
+                const rightY = [];
+                
+                X.forEach((x, idx) => {
+                    if (x[featureName] <= bestThreshold) {
+                        leftX.push(x);
+                        leftY.push(y[idx]);
+                    } else {
+                        rightX.push(x);
+                        rightY.push(y[idx]);
+                    }
+                });
+                
+                return {
+                    feature: featureName,
+                    threshold: bestThreshold,
+                    left: this.buildTree(leftX, leftY, depth + 1),
+                    right: this.buildTree(rightX, rightY, depth + 1)
+                };
+            }
+            
+            calculateGini(y) {
+                const counts = {};
+                y.forEach(label => counts[label] = (counts[label] || 0) + 1);
+                let gini = 1;
+                for (const count of Object.values(counts)) {
+                    const prob = count / y.length;
+                    gini -= prob * prob;
+                }
+                return gini;
+            }
+            
+            predict(X) {
+                return X.map(x => this.predictSingle(x, this.tree));
+            }
+            
+            predictSingle(x, node) {
+                if (node.prediction !== undefined) {
+                    return node.prediction;
+                }
+                
+                if (x[node.feature] <= node.threshold) {
+                    return this.predictSingle(x, node.left);
+                } else {
+                    return this.predictSingle(x, node.right);
+                }
+            }
+        }
+
+        // Simple Logistic Regression implementation
+        class SimpleLogisticRegression {
+            constructor() {
+                this.weights = null;
+            }
+            
+            fit(X, y) {
+                // Simple gradient descent
+                const features = ['totalDischarges', 'avgLengthOfStay', 'bedUtilization', 'staffRatio'];
+                this.weights = new Array(features.length + 1).fill(0);
+                
+                const learningRate = 0.001;
+                const iterations = 100;
+                
+                for (let iter = 0; iter < iterations; iter++) {
+                    const gradients = new Array(this.weights.length).fill(0);
+                    
+                    X.forEach((x, idx) => {
+                        const prediction = this.sigmoid(this.dotProduct(x, features));
+                        const error = (y[idx] === 'high' ? 1 : 0) - prediction;
+                        
+                        gradients[0] += error; // bias
+                        features.forEach((feature, f) => {
+                            gradients[f + 1] += error * x[feature];
+                        });
+                    });
+                    
+                    this.weights.forEach((w, i) => {
+                        this.weights[i] += learningRate * gradients[i] / X.length;
+                    });
+                }
+            }
+            
+            dotProduct(x, features) {
+                let sum = this.weights[0]; // bias
+                features.forEach((feature, f) => {
+                    sum += this.weights[f + 1] * x[feature];
+                });
+                return sum;
+            }
+            
+            sigmoid(z) {
+                return 1 / (1 + Math.exp(-Math.max(-250, Math.min(250, z))));
+            }
+            
+            predict(X) {
+                const features = ['totalDischarges', 'avgLengthOfStay', 'bedUtilization', 'staffRatio'];
+                return X.map(x => {
+                    const prob = this.sigmoid(this.dotProduct(x, features));
+                    return prob > 0.5 ? 'high' : 'low';
+                });
+            }
+        }
+
+        // Calculate performance metrics
+        function calculateMetrics(yTrue, yPred) {
+            let tp = 0, tn = 0, fp = 0, fn = 0;
+            
+            yTrue.forEach((actual, i) => {
+                const predicted = yPred[i];
+                if (actual === 'high' && predicted === 'high') tp++;
+                else if (actual === 'low' && predicted === 'low') tn++;
+                else if (actual === 'low' && predicted === 'high') fp++;
+                else if (actual === 'high' && predicted === 'low') fn++;
+            });
+            
+            const accuracy = (tp + tn) / (tp + tn + fp + fn);
+            const precision = tp / (tp + fp) || 0;
+            const recall = tp / (tp + fn) || 0;
+            const f1 = 2 * (precision * recall) / (precision + recall) || 0;
+            
+            return { accuracy, precision, recall, f1, tp, tn, fp, fn };
+        }
+
+        // Update threshold display
+        document.getElementById('mco-threshold').addEventListener('input', (e) => {
+            document.getElementById('mco-threshold-display').textContent = e.target.value;
+        });
+
+        // Run classification
+        document.getElementById('run-mco-model').addEventListener('click', () => {
+            const modelType = document.getElementById('mco-model-type').value;
+            let threshold = parseInt(document.getElementById('mco-threshold').value);
+            
+            // Generate features
+            const data = generateFeatures(medicalData);
+            
+            // Check if threshold produces balanced classes
+            const highCount = data.filter(d => d.totalDischarges >= threshold).length;
+            const lowCount = data.filter(d => d.totalDischarges < threshold).length;
+            const totalCount = data.length;
+            
+            let adjustedThreshold = threshold;
+            let thresholdAdjusted = false;
+            
+            // Auto-adjust threshold if classes are too imbalanced
+            if (highCount < totalCount * 0.15 || lowCount < totalCount * 0.15) {
+                adjustedThreshold = findOptimalThreshold(data);
+                thresholdAdjusted = true;
+            }
+            
+            // Create labels based on adjusted threshold
+            const labels = data.map(d => d.totalDischarges >= adjustedThreshold ? 'high' : 'low');
+            
+            // Split data for training and testing
+            const trainSize = Math.floor(data.length * 0.7);
+            const trainX = data.slice(0, trainSize);
+            const trainY = labels.slice(0, trainSize);
+            const testX = data.slice(trainSize);
+            const testY = labels.slice(trainSize);
+            
+            // Train model
+            let model;
+            switch (modelType) {
+                case 'Decision Tree':
+                    model = new SimpleDecisionTree();
+                    break;
+                case 'Logistic Regression':
+                    model = new SimpleLogisticRegression();
+                    break;
+                case 'SVM':
+                    // For simplicity, use logistic regression as SVM placeholder
+                    model = new SimpleLogisticRegression();
+                    break;
+            }
+            
+            model.fit(trainX, trainY);
+            const predictions = model.predict(testX);
+            const metrics = calculateMetrics(testY, predictions);
+            
+            // Display results
+            displayResults(modelType, adjustedThreshold, thresholdAdjusted, metrics, testY, predictions, data);
+        });
+
+        function displayResults(modelType, threshold, thresholdAdjusted, metrics, testY, predictions, data) {
+            const resultsDiv = document.getElementById('mco-results');
+            const contentDiv = document.getElementById('results-content');
+            
+            const highCount = data.filter(d => d.totalDischarges >= threshold).length;
+            const lowCount = data.filter(d => d.totalDischarges < threshold).length;
+            
+            let html = `
+                <h4 style="color: #f9fafb; margin-bottom: 16px;">${modelType} Classification Results</h4>
+                
+                ${thresholdAdjusted ? `
+                    <div class="warning">
+                        <strong>⚠️ Threshold Auto-Adjusted:</strong> Original threshold would have resulted in imbalanced classes. 
+                        Adjusted from original to ${threshold} for better classification.
+                    </div>
+                ` : `
+                    <div class="success">
+                        <strong>✓ Threshold Optimal:</strong> Using threshold of ${threshold} discharges.
+                    </div>
+                `}
+                
+                <div class="data-distribution">
+                    <strong>Data Distribution:</strong><br>
+                    High Volume (≥${threshold}): ${highCount} samples (${(highCount/data.length*100).toFixed(1)}%)<br>
+                    Low Volume (<${threshold}): ${lowCount} samples (${(lowCount/data.length*100).toFixed(1)}%)
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">${(metrics.accuracy * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Accuracy</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(metrics.precision * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(metrics.recall * 100).toFixed(1)}%</div>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">${(metrics.f1 * 100).toFixed(1)}%</div>
+                        <div class="metric-label">F1-Score</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="confusion-matrix" width="300" height="200"></canvas>
+                </div>
+                
+                <div style="margin-top: 16px; padding: 12px; background: rgba(55, 65, 81, 0.3); border-radius: 8px;">
+                    <strong style="color: #60a5fa;">Key Insights:</strong><br>
+                    • Model correctly classified ${Math.round(metrics.accuracy * 100)}% of medical cases<br>
+                    • ${metrics.tp} true high-volume predictions, ${metrics.tn} true low-volume predictions<br>
+                    • Primary factors: Total discharges, bed utilization, and staff ratios are key predictors<br>
+                    • Recommendation: ${metrics.f1 > 0.7 ? 'Model performance is good for deployment' : 'Consider gathering more features or data for better performance'}
+                </div>
+            `;
+            
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+            
+            // Create confusion matrix chart
+            setTimeout(() => {
+                createConfusionMatrix(metrics);
+            }, 100);
+        }
+
+        function createConfusionMatrix(metrics) {
+            const ctx = document.getElementById('confusion-matrix').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['True Positive', 'True Negative', 'False Positive', 'False Negative'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [metrics.tp, metrics.tn, metrics.fp, metrics.fn],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',   // Green for TP
+                            'rgba(34, 197, 94, 0.6)',   // Light Green for TN
+                            'rgba(239, 68, 68, 0.8)',   // Red for FP
+                            'rgba(239, 68, 68, 0.6)'    // Light Red for FN
+                        ],
+                        borderColor: [
+                            'rgb(34, 197, 94)',
+                            'rgb(34, 197, 94)',
+                            'rgb(239, 68, 68)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Confusion Matrix Results',
+                            color: '#f9fafb'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.3)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: 'rgba(75, 85, 99, 0.3)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

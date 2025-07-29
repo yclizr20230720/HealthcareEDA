@@ -1,0 +1,626 @@
+<!-- templates/index_Cursor.html (Full Dashboard Layout) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Cost Analysis Data App</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            background: #1a2233;
+            color: #eaf6fb;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 16px 16px 16px;
+        }
+        .section-title {
+            color: #1de9b6;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            margin-top: 32px;
+        }
+        .global-filters {
+            background: #232d3b;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        .global-filters .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .global-filters label {
+            color: #eaf6fb;
+            font-weight: 600;
+            font-size: 1.08rem;
+            margin-right: 8px;
+        }
+        .global-filters select, .global-filters input[type="range"] {
+            background: #22304a;
+            color: #eaf6fb;
+            border: 1px solid #4fd1c5;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 1.08rem;
+            min-width: 160px;
+        }
+        .global-filters .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 320px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+        .dashboard-row {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: #232d3b;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            padding: 24px;
+            margin-bottom: 0;
+            flex: 1;
+            min-width: 0;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            color: #4fd1c5;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .card-desc {
+            font-size: 1.02rem;
+            color: #b2c2d6;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .controls label {
+            color: #eaf6fb;
+            font-weight: 600;
+            font-size: 1.08rem;
+            margin-right: 8px;
+        }
+        .radio-group, .dropdown-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 24px;
+        }
+        .radio-group label, .dropdown-group label {
+            font-size: 1.08rem;
+            font-weight: 600;
+        }
+        .radio-group input[type="radio"], .radio-group input[type="checkbox"] {
+            margin-right: 4px;
+            accent-color: #4fd1c5;
+            transform: scale(1.2);
+        }
+        .slider-label {
+            min-width: 120px;
+            color: #b2c2d6;
+            font-size: 1.08rem;
+        }
+        select, input[type="range"] {
+            font-size: 1.08rem;
+        }
+        /* Responsive for smaller screens */
+        @media (max-width: 900px) {
+            .dashboard-row, .global-filters .filter-row, .controls {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color:#4fd1c5;">Healthcare Cost Analysis Data App</h1>
+        <p style="color:#b2c2d6;">Explore Medicare payment data across different medical conditions, hospitals, and geographic regions to understand cost variations, reimbursement patterns, and discharge trends.</p>
+
+        <div class="section-title">Analysis Report</div>
+        <div class="global-filters">
+            <div class="filter-row">
+                <div class="dropdown-group">
+                    <label for="global_classification">Medical Classification:</label>
+                    <select id="global_classification"></select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="global_definition">Medical Definition:</label>
+                    <select id="global_definition"></select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="global_drg">DRG Code:</label>
+                    <select id="global_drg"></select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="global_state">Provider State:</label>
+                    <select id="global_state"></select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="global_region">Hospital Referral Region:</label>
+                    <select id="global_region"></select>
+                </div>
+            </div>
+            <div class="filter-row">
+                <div class="slider-group">
+                    <span class="slider-label">Reimbursement Rate:</span>
+                    <input type="range" id="global_reim_min" min="0" max="2" step="0.01" value="0">
+                    <input type="range" id="global_reim_max" min="0" max="2" step="0.01" value="2">
+                    <span id="global_reim_val"></span>
+                </div>
+                <div class="slider-group">
+                    <span class="slider-label">Average Covered Charges:</span>
+                    <input type="range" id="global_charge_min" min="0" max="400000" step="100" value="0">
+                    <input type="range" id="global_charge_max" min="0" max="400000" step="100" value="400000">
+                    <span id="global_charge_val"></span>
+                </div>
+                <div class="slider-group">
+                    <span class="slider-label">Total Discharges:</span>
+                    <input type="range" id="global_discharge_min" min="0" max="2000" step="1" value="0">
+                    <input type="range" id="global_discharge_max" min="0" max="2000" step="1" value="2000">
+                    <span id="global_discharge_val"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- First row: Treemap + Bar chart -->
+        <div class="dashboard-row">
+            <div class="card">
+                <div class="card-title">Total Discharges by Medical Definition</div>
+                <div class="card-desc">Treemap visualization showing total discharges grouped by medical definition or DRG code</div>
+                <div class="controls">
+                    <div class="dropdown-group">
+                        <label for="classification">Classification:</label>
+                        <select id="classification"></select>
+                    </div>
+                    <div class="radio-group">
+                        <label>Group By:</label>
+                        <input type="radio" id="group_def" name="group_by" value="Definition" checked>
+                        <label for="group_def">Definition</label>
+                        <input type="radio" id="group_drg" name="group_by" value="DRG">
+                        <label for="group_drg">DRG</label>
+                    </div>
+                </div>
+                <div id="treemap" style="width:100%;height:350px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Reimbursement Rate by Medical Classification</div>
+                <div class="card-desc">Bar chart showing reimbursement rates, filterable by definition and sortable.</div>
+                <div class="controls">
+                    <div class="dropdown-group">
+                        <label for="bar_definition">Select Definition:</label>
+                        <select id="bar_definition"></select>
+                    </div>
+                    <div class="radio-group">
+                        <label>Sort By:</label>
+                        <input type="radio" id="sort_highest" name="bar_sort" value="highest" checked>
+                        <label for="sort_highest">Highest Reimbursement</label>
+                        <input type="radio" id="sort_alpha" name="bar_sort" value="alpha">
+                        <label for="sort_alpha">Alphabetical</label>
+                        <input type="radio" id="sort_charges" name="bar_sort" value="charges">
+                        <label for="sort_charges">Highest Charges</label>
+                        <input type="radio" id="sort_payments" name="bar_sort" value="payments">
+                        <label for="sort_payments">Highest Payments</label>
+                        <input type="radio" id="sort_gap" name="bar_sort" value="gap">
+                        <label for="sort_gap">Largest Gap</label>
+                    </div>
+                </div>
+                <div id="bar_chart" style="width:100%;height:350px;"></div>
+            </div>
+        </div>
+
+        <!-- Second row: Choropleth map -->
+        <div class="card">
+            <div class="card-title">Geographic Variation in Average Covered Charges</div>
+            <div class="card-desc">Choropleth map showing average covered charges across states, filterable by medical classification and definition.</div>
+            <div class="controls">
+                <div class="dropdown-group">
+                    <label for="map_classification">Medical Classification:</label>
+                    <select id="map_classification"></select>
+                </div>
+                <div class="dropdown-group">
+                    <label for="map_definition">Medical Definition:</label>
+                    <select id="map_definition"></select>
+                </div>
+            </div>
+            <div id="choropleth_map" style="width:100%;height:400px;"></div>
+        </div>
+
+        <!-- Third row: Scatter + Provider Treemap -->
+        <div class="dashboard-row">
+            <div class="card">
+                <div class="card-title">Average Total Payments vs. Average Covered Charges</div>
+                <div class="card-desc">Scatter plot showing relationship between payments and charges, colorable by classification.</div>
+                <div class="controls">
+                    <div class="radio-group">
+                        <label>Color by Classification:</label>
+                        <input type="checkbox" id="color_circulatory" checked><label for="color_circulatory">Circulatory System</label>
+                        <input type="checkbox" id="color_blood" checked><label for="color_blood">Blood Diseases</label>
+                        <input type="checkbox" id="color_alcohol" checked><label for="color_alcohol">Alcohol and Drug Use</label>
+                    </div>
+                    <div class="radio-group">
+                        <label for="regression_toggle">Show Regression Line:</label>
+                        <input type="checkbox" id="regression_toggle">
+                    </div>
+                </div>
+                <div id="scatter_plot" style="width:100%;height:350px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">Total Discharges by Provider</div>
+                <div class="card-desc">Treemap showing total discharges by provider, filterable by state and top N.</div>
+                <div class="controls">
+                    <div class="dropdown-group">
+                        <label for="provider_state">Filter by State:</label>
+                        <select id="provider_state"></select>
+                    </div>
+                    <div class="dropdown-group">
+                        <label for="top_n_providers">Limit to Top N Providers:</label>
+                        <select id="top_n_providers">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="provider_treemap" style="width:100%;height:350px;"></div>
+            </div>
+        </div>
+
+        <!-- Fourth row: Histogram -->
+        <div class="card">
+            <div class="card-title">Distribution of Reimbursement Rates</div>
+            <div class="card-desc">Histogram showing distribution of reimbursement rates, with adjustable bin width and segmentation.</div>
+            <div class="controls">
+                <div class="dropdown-group">
+                    <label for="hist_binwidth">Bin Width:</label>
+                    <select id="hist_binwidth">
+                        <option value="0.05">0.05</option>
+                        <option value="0.1" selected>0.1</option>
+                        <option value="0.2">0.2</option>
+                    </select>
+                </div>
+                <div class="radio-group">
+                    <label>Segment by Classification:</label>
+                    <input type="radio" id="hist_all" name="hist_classification" value="All" checked><label for="hist_all">All</label>
+                    <input type="radio" id="hist_circulatory" name="hist_classification" value="Circulatory System"><label for="hist_circulatory">Circulatory System</label>
+                    <input type="radio" id="hist_blood" name="hist_classification" value="Blood Diseases"><label for="hist_blood">Blood Diseases</label>
+                    <input type="radio" id="hist_alcohol" name="hist_classification" value="Alcohol and Drug Use"><label for="hist_alcohol">Alcohol and Drug Use</label>
+                </div>
+            </div>
+            <div id="histogram" style="width:100%;height:350px;"></div>
+        </div>
+    </div>
+    <!-- Placeholder: Add JS logic for dynamic chart rendering and filter population -->
+    <script>
+    // ========== 1. Populate Global Filters ==========
+    async function populateFilters() {
+        const res = await fetch('/api/filters');
+        const filters = await res.json();
+        // Helper to populate a select
+        function fillSelect(id, options, allLabel='All') {
+            const sel = document.getElementById(id);
+            sel.innerHTML = '';
+            if (allLabel) sel.innerHTML += `<option value="All">${allLabel}</option>`;
+            options.forEach(opt => {
+                sel.innerHTML += `<option value="${opt}">${opt}</option>`;
+            });
+        }
+        fillSelect('global_classification', filters.classifications);
+        fillSelect('global_definition', filters.definitions);
+        fillSelect('global_drg', filters.drg_codes);
+        fillSelect('global_state', filters.states, 'All States');
+        fillSelect('global_region', filters.regions);
+        // Set slider min/max/values
+        document.getElementById('global_reim_min').min = filters.reim_min;
+        document.getElementById('global_reim_min').max = filters.reim_max;
+        document.getElementById('global_reim_max').min = filters.reim_min;
+        document.getElementById('global_reim_max').max = filters.reim_max;
+        document.getElementById('global_reim_min').value = filters.reim_min;
+        document.getElementById('global_reim_max').value = filters.reim_max;
+        document.getElementById('global_charge_min').min = filters.charge_min;
+        document.getElementById('global_charge_min').max = filters.charge_max;
+        document.getElementById('global_charge_max').min = filters.charge_min;
+        document.getElementById('global_charge_max').max = filters.charge_max;
+        document.getElementById('global_charge_min').value = filters.charge_min;
+        document.getElementById('global_charge_max').value = filters.charge_max;
+        document.getElementById('global_discharge_min').min = filters.discharge_min;
+        document.getElementById('global_discharge_min').max = filters.discharge_max;
+        document.getElementById('global_discharge_max').min = filters.discharge_min;
+        document.getElementById('global_discharge_max').max = filters.discharge_max;
+        document.getElementById('global_discharge_min').value = filters.discharge_min;
+        document.getElementById('global_discharge_max').value = filters.discharge_max;
+        // Also populate local chart filters
+        fillSelect('classification', filters.classifications);
+        fillSelect('bar_definition', filters.definitions, 'All Definitions');
+        fillSelect('map_classification', filters.classifications, 'All Classifications');
+        fillSelect('map_definition', filters.definitions, 'All Definitions');
+        fillSelect('provider_state', filters.states, 'All States');
+    }
+
+    // ========== 2. Fetch Filter Values ===========
+    function getGlobalFilters() {
+        return {
+            classification: document.getElementById('global_classification').value,
+            definition: document.getElementById('global_definition').value,
+            drg: document.getElementById('global_drg').value,
+            state: document.getElementById('global_state').value,
+            region: document.getElementById('global_region').value,
+            reim_min: parseFloat(document.getElementById('global_reim_min').value),
+            reim_max: parseFloat(document.getElementById('global_reim_max').value),
+            charge_min: parseFloat(document.getElementById('global_charge_min').value),
+            charge_max: parseFloat(document.getElementById('global_charge_max').value),
+            discharge_min: parseInt(document.getElementById('global_discharge_min').value),
+            discharge_max: parseInt(document.getElementById('global_discharge_max').value)
+        };
+    }
+
+    // ========== 3. Chart Renderers ===========
+    async function renderTreemap() {
+        const filters = getGlobalFilters();
+        const classification = document.getElementById('classification').value;
+        const groupBy = document.querySelector('input[name="group_by"]:checked').value;
+        const params = new URLSearchParams({...filters, classification, group_by: groupBy});
+        const res = await fetch(`/api/treemap_data?${params}`);
+        const data = await res.json();
+        const labels = data.map(row => row.Label);
+        const values = data.map(row => row['Total Discharges']);
+        const hovertext = data.map(row => `${groupBy}: ${row.Label}<br>Total Discharges: ${row['Total Discharges']}`);
+        const trace = {
+            type: 'treemap',
+            labels: labels,
+            parents: Array(labels.length).fill(''),
+            values: values,
+            textinfo: 'label+value',
+            hoverinfo: 'text',
+            hovertext: hovertext,
+            marker: {
+                colors: values,
+                colorscale: 'Blues',
+                line: { width: 2, color: '#1a2233' }
+            },
+            pathbar: { visible: false }
+        };
+        const layout = {
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 0, r: 0, b: 0 },
+            width: 500,
+            height: 350,
+            title: '',
+        };
+        Plotly.newPlot('treemap', [trace], layout, {displayModeBar: false, responsive: true});
+    }
+
+    async function renderBarChart() {
+        const filters = getGlobalFilters();
+        const definition = document.getElementById('bar_definition').value;
+        const sort = document.querySelector('input[name="bar_sort"]:checked').value;
+        const params = new URLSearchParams({...filters, definition, sort});
+        const res = await fetch(`/api/bar_chart_data?${params}`);
+        const data = await res.json();
+        const x = data.map(row => row.Label);
+        const y = data.map(row => row.Value);
+        const trace = {
+            type: 'bar',
+            x: x,
+            y: y,
+            marker: { color: '#4fd1c5' },
+            hoverinfo: 'x+y',
+        };
+        const layout = {
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 40, r: 0, b: 80 },
+            width: 500,
+            height: 350,
+            xaxis: { tickangle: -45 },
+        };
+        Plotly.newPlot('bar_chart', [trace], layout, {displayModeBar: false, responsive: true});
+    }
+
+    async function renderChoropleth() {
+        const filters = getGlobalFilters();
+        const classification = document.getElementById('map_classification').value;
+        const definition = document.getElementById('map_definition').value;
+        const params = new URLSearchParams({...filters, classification, definition});
+        const res = await fetch(`/api/choropleth_data?${params}`);
+        const data = await res.json();
+        const trace = {
+            type: 'choropleth',
+            locationmode: 'USA-states',
+            locations: data.map(row => row.State),
+            z: data.map(row => row['Average Covered Charges']),
+            text: data.map(row => `${row.State}<br>Avg. Covered Charges: $${row['Average Covered Charges']}`),
+            colorscale: 'Blues',
+            colorbar: { title: 'Avg. Covered Charges', thickness: 12 },
+        };
+        const layout = {
+            geo: { scope: 'usa', bgcolor: '#1a2233' },
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 0, r: 0, b: 0 },
+            width: 1100,
+            height: 400,
+        };
+        Plotly.newPlot('choropleth_map', [trace], layout, {displayModeBar: false, responsive: true});
+    }
+
+    async function renderScatter() {
+        const filters = getGlobalFilters();
+        const colorBy = [
+            document.getElementById('color_circulatory').checked ? 'Circulatory System' : null,
+            document.getElementById('color_blood').checked ? 'Blood Diseases' : null,
+            document.getElementById('color_alcohol').checked ? 'Alcohol and Drug Use' : null
+        ].filter(Boolean);
+        const regression = document.getElementById('regression_toggle').checked;
+        const params = new URLSearchParams({...filters, colorBy: colorBy.join(','), regression});
+        const res = await fetch(`/api/scatter_data?${params}`);
+        const data = await res.json();
+        const traces = data.traces.map(trace => ({
+            x: trace.x,
+            y: trace.y,
+            mode: 'markers',
+            type: 'scatter',
+            name: trace.name,
+            marker: { color: trace.color, opacity: 0.7 },
+            text: trace.text
+        }));
+        if (data.regression) {
+            traces.push({
+                x: data.regression.x,
+                y: data.regression.y,
+                mode: 'lines',
+                name: 'Regression',
+                line: { color: '#fff', width: 2, dash: 'dot' }
+            });
+        }
+        const layout = {
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 60, r: 0, b: 60 },
+            width: 500,
+            height: 350,
+            xaxis: { title: 'Average Covered Charges ($)' },
+            yaxis: { title: 'Average Total Payments ($)' },
+        };
+        Plotly.newPlot('scatter_plot', traces, layout, {displayModeBar: false, responsive: true});
+    }
+
+    async function renderProviderTreemap() {
+        const filters = getGlobalFilters();
+        const state = document.getElementById('provider_state').value;
+        const topN = document.getElementById('top_n_providers').value;
+        const params = new URLSearchParams({...filters, state, topN});
+        const res = await fetch(`/api/provider_treemap_data?${params}`);
+        const data = await res.json();
+        const labels = data.map(row => row.Label);
+        const values = data.map(row => row['Total Discharges']);
+        const hovertext = data.map(row => `${row.Label}<br>Total Discharges: ${row['Total Discharges']}`);
+        const trace = {
+            type: 'treemap',
+            labels: labels,
+            parents: Array(labels.length).fill(''),
+            values: values,
+            textinfo: 'label+value',
+            hoverinfo: 'text',
+            hovertext: hovertext,
+            marker: {
+                colors: values,
+                colorscale: 'Greens',
+                line: { width: 2, color: '#1a2233' }
+            },
+            pathbar: { visible: false }
+        };
+        const layout = {
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 0, r: 0, b: 0 },
+            width: 500,
+            height: 350,
+            title: '',
+        };
+        Plotly.newPlot('provider_treemap', [trace], layout, {displayModeBar: false, responsive: true});
+    }
+
+    async function renderHistogram() {
+        const filters = getGlobalFilters();
+        const binWidth = document.getElementById('hist_binwidth').value;
+        const classification = document.querySelector('input[name="hist_classification"]:checked').value;
+        const params = new URLSearchParams({...filters, binWidth, classification});
+        const res = await fetch(`/api/histogram_data?${params}`);
+        const data = await res.json();
+        const trace = {
+            type: 'histogram',
+            x: data.x,
+            xbins: { size: parseFloat(binWidth) },
+            marker: { color: '#4fd1c5' },
+            opacity: 0.85,
+        };
+        const layout = {
+            paper_bgcolor: '#1a2233',
+            plot_bgcolor: '#1a2233',
+            font: { family: 'Segoe UI, Arial, sans-serif', color: '#eaf6fb' },
+            margin: { t: 40, l: 60, r: 0, b: 60 },
+            width: 1100,
+            height: 350,
+            xaxis: { title: 'Reimbursement Rate' },
+            yaxis: { title: 'Count' },
+        };
+        Plotly.newPlot('histogram', [trace], layout, {displayModeBar: false, responsive: true});
+    }
+
+    // ========== 4. Event Listeners ===========
+    function addListeners() {
+        // Global filters
+        [
+            'global_classification','global_definition','global_drg','global_state','global_region',
+            'global_reim_min','global_reim_max','global_charge_min','global_charge_max','global_discharge_min','global_discharge_max'
+        ].forEach(id => document.getElementById(id).addEventListener('change', renderAllCharts));
+        // Local chart controls
+        document.getElementById('classification').addEventListener('change', renderTreemap);
+        document.querySelectorAll('input[name="group_by"]').forEach(el => el.addEventListener('change', renderTreemap));
+        document.getElementById('bar_definition').addEventListener('change', renderBarChart);
+        document.querySelectorAll('input[name="bar_sort"]').forEach(el => el.addEventListener('change', renderBarChart));
+        document.getElementById('map_classification').addEventListener('change', renderChoropleth);
+        document.getElementById('map_definition').addEventListener('change', renderChoropleth);
+        document.getElementById('color_circulatory').addEventListener('change', renderScatter);
+        document.getElementById('color_blood').addEventListener('change', renderScatter);
+        document.getElementById('color_alcohol').addEventListener('change', renderScatter);
+        document.getElementById('regression_toggle').addEventListener('change', renderScatter);
+        document.getElementById('provider_state').addEventListener('change', renderProviderTreemap);
+        document.getElementById('top_n_providers').addEventListener('change', renderProviderTreemap);
+        document.getElementById('hist_binwidth').addEventListener('change', renderHistogram);
+        document.querySelectorAll('input[name="hist_classification"]').forEach(el => el.addEventListener('change', renderHistogram));
+    }
+
+    // ========== 5. Render All Charts ===========
+    function renderAllCharts() {
+        renderTreemap();
+        renderBarChart();
+        renderChoropleth();
+        renderScatter();
+        renderProviderTreemap();
+        renderHistogram();
+    }
+
+    // ========== 6. On Page Load ===========
+    window.addEventListener('DOMContentLoaded', async () => {
+        await populateFilters();
+        addListeners();
+        renderAllCharts();
+    });
+    </script>
+</body>
+</html>

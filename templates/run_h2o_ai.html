@@ -1,0 +1,1011 @@
+<!-- templates/h2o_ai_integration.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H2O.ai Integration - Healthcare Cost Analysis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <!-- Chart.js CDN (for potential future use, e.g., if any H2O metrics are charted with it) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Consistent styles with other pages */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text color */
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #2d3748; /* Slightly lighter dark for cards */
+            border-radius: 0.5rem; /* Rounded corners */
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #4a5568; /* Subtle border */
+        }
+        .input-group label {
+            color: #cbd5e0; /* Slightly darker label text */
+            margin-bottom: 0.5rem;
+            display: block;
+            font-weight: 500;
+        }
+        .input-group select, .input-group input[type="number"],
+        .input-group input[type="range"], .input-group input[type="checkbox"] + label,
+        .input-group textarea, .input-group input[type="text"] {
+            background-color: #4a5568;
+            border: 1px solid #6b7280;
+            color: #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%; /* Ensure inputs take full width */
+        }
+        .input-group select:focus, .input-group input[type="number"]:focus,
+        .input-group input[type="range"]:focus, .input-group input[type="checkbox"] + label:focus-within,
+        .input-group textarea:focus, .input-group input[type="text"]:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.5);
+        }
+        .btn-primary {
+            background-color: #3182ce;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background-color: #2c5282;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+            color: #a0aec0;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: #4a5568;
+            color: #e2e8f0;
+        }
+        .nav-link.active {
+            background-color: #3182ce;
+            color: white;
+        }
+        .flash-message {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        .flash-message.success {
+            background-color: #2f855a;
+            color: white;
+        }
+        .flash-message.error {
+            background-color: #c53030;
+            color: white;
+        }
+        .flash-message.warning {
+            background-color: #d69e2e;
+            color: white;
+        }
+        .flash-message.info {
+            background-color: #3182ce;
+            color: white;
+        }
+        /* Plotly specific overrides for dark theme */
+        .js-plotly-plot .plotly .modebar-btn {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #4a5568 !important;
+        }
+        .js-plotly-plot .plotly .modebar-btn:hover {
+            background-color: #4a5568 !important;
+        }
+        .js-plotly-plot .plotly .g-gtitle {
+            fill: #e2e8f0 !important;
+        }
+        .js-plotly-plot .plotly .xtick text, .js-plotly-plot .plotly .ytick text {
+            fill: #a0aec0 !important;
+        }
+        .js-plotly-plot .plotly .axis-title {
+            fill: #e2e8f0 !important;
+        }
+        .js-plotly-plot .plotly .legend .item text {
+            fill: #e2e8f0 !important;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        /* Range slider track and thumb styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #4a5568;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3182ce;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3182ce;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.5);
+        }
+
+        /* H2O.ai specific styles */
+        .h2o-status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .h2o-status-indicator.running { background-color: #22c55e; } /* Green */
+        .h2o-status-indicator.stopped { background-color: #ef4444; } /* Red */
+        .h2o-status-indicator.unknown { background-color: #f59e0b; } /* Orange */
+
+        .h2o-leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .h2o-leaderboard-table th, .h2o-leaderboard-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #4a5568;
+            text-align: left;
+        }
+        .h2o-leaderboard-table th {
+            background-color: #374151;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        .h2o-leaderboard-table tr:hover {
+            background-color: #3f4a5a;
+        }
+        .h2o-leaderboard-table button {
+            background-color: #60a5fa;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            transition: background-color 0.2s;
+        }
+        .h2o-leaderboard-table button:hover {
+            background-color: #3b82f6;
+        }
+
+        /* Multi-select styling for ignored columns */
+        .multi-select-dropdown {
+            position: relative;
+            width: 100%;
+        }
+        .multi-select-dropdown .selected-items-display {
+            background-color: #4a5568;
+            border: 1px solid #6b7280;
+            color: #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            min-height: 38px; /* Match select height */
+            cursor: pointer;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        .multi-select-dropdown .selected-item-tag {
+            background-color: #3182ce;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+        .multi-select-dropdown .selected-item-tag .remove-tag {
+            margin-left: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .multi-select-dropdown .options-container {
+            position: absolute;
+            background-color: #2d3748;
+            border: 1px solid #6b7280;
+            border-radius: 0.375rem;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 10;
+            margin-top: 4px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .multi-select-dropdown .options-container label {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #e2e8f0;
+        }
+        .multi-select-dropdown .options-container label:hover {
+            background-color: #4a5568;
+        }
+        .multi-select-dropdown .options-container input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .green-message {
+            color: #4ade80; /* A pleasant green */
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-md py-4">
+            <div class="container flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-teal-400">Healthcare Cost Analysis</h1>
+                <nav>
+                    <ul class="flex space-x-4">
+                        <li><a href="{{ url_for('data_access') }}" class="nav-link {% if current_page == 'data_access' %}active{% endif %}">Data Access</a></li>
+                        <li><a href="{{ url_for('data_engineering') }}" class="nav-link {% if current_page == 'data_engineering' %}active{% endif %}">Data Engineering</a></li>
+                        <li><a href="{{ url_for('machine_learning') }}" class="nav-link {% if current_page == 'machine_learning' %}active{% endif %}">Machine Learning</a></li>
+                        <li><a href="{{ url_for('h2o_ai_integration') }}" class="nav-link {% if current_page == 'h2o_ai_integration' %}active{% endif %}">Run H2O.ai</a></li>
+                        <li><a href="{{ url_for('job_status_review') }}" class="nav-link {% if current_page == 'job_status_review' %}active{% endif %}">Job Status Review</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow container py-8">
+            <h2 class="text-2xl font-semibold text-teal-300 mb-6">H2O.ai AutoML Integration</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="space-y-6">
+                <!-- H2O Cluster Management -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-3">H2O Cluster Management</h3>
+                    <div class="flex items-center mb-4">
+                        <span id="h2o-cluster-status-indicator" class="h2o-status-indicator {% if h2o_cluster_status.is_running %}running{% else %}stopped{% endif %}"></span>
+                        <span id="h2o-cluster-status-message" class="text-gray-300">{{ h2o_cluster_status.status_message }}</span>
+                    </div>
+                    <button id="btn-init-h2o" class="btn-primary w-auto mr-2">Initialize H2O Cluster</button>
+                    <a id="h2o-flow-link" href="{{ h2o_cluster_status.flow_url }}" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-semibold transition-colors {% if not h2o_cluster_status.flow_url %}opacity-50 pointer-events-none{% endif %}">Open H2O Flow UI</a>
+                </div>
+
+                <!-- Data Preparation -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-3">Data Preparation for AutoML</h3>
+                    <p class="text-gray-400 mb-4">Upload the current dataset to H2O.ai cluster or select an existing H2OFrame.</p>
+                    <button id="btn-upload-data-h2o" class="btn-primary w-auto mr-2">Upload Current Data to H2O</button>
+                    <button id="btn-refresh-h2o-frames" class="btn-primary w-auto">Refresh H2O Frames</button>
+                    <div class="input-group mt-4">
+                        <label for="h2o-select-frame" class="block text-sm font-medium text-gray-300">Select H2OFrame for AutoML:</label>
+                        <select id="h2o-select-frame" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                            <option value="">-- Select a Frame --</option>
+                        </select>
+                    </div>
+                    <div id="h2o-frame-info" class="text-gray-400 text-sm mt-2"></div>
+                </div>
+
+                <!-- AutoML Configuration -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-3">AutoML Configuration</h3>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="h2o-target-column" class="block text-sm font-medium text-gray-300">Target Column:</label>
+                            <select id="h2o-target-column" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="">-- Select Target --</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="h2o-problem-type" class="block text-sm font-medium text-gray-300">Problem Type:</label>
+                            <select id="h2o-problem-type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="classification">Classification</option>
+                                <option value="regression">Regression</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="block text-sm font-medium text-gray-300">Features to Ignore:</label>
+                            <div id="h2o-ignored-columns-dropdown" class="multi-select-dropdown">
+                                <div class="selected-items-display" tabindex="0">
+                                    <span class="placeholder-text">Select columns to ignore...</span>
+                                </div>
+                                <div class="options-container hidden">
+                                    <!-- Checkboxes will be dynamically loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="input-group">
+                                <label for="h2o-max-runtime" class="block text-sm font-medium text-gray-300">Max Runtime (secs): <span id="h2o-max-runtime-display">300</span></label>
+                                <input type="range" id="h2o-max-runtime" min="60" max="1800" step="60" value="300" class="w-full">
+                            </div>
+                            <div class="input-group">
+                                <label for="h2o-max-models" class="block text-sm font-medium text-gray-300">Max Models: <span id="h2o-max-models-display">10</span></label>
+                                <input type="range" id="h2o-max-models" min="1" max="50" step="1" value="10" class="w-full">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="h2o-sort-metric" class="block text-sm font-medium text-gray-300">Sort Metric:</label>
+                            <select id="h2o-sort-metric" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="AUTO">AUTO</option>
+                                <option value="AUC">AUC (Classification)</option>
+                                <option value="RMSE">RMSE (Regression)</option>
+                                <option value="GLM">GLM (Generalized Linear Model)</option>
+                                <option value="MeanPerClassError">Mean Per Class Error</option>
+                                <option value="Logloss">Logloss</option>
+                                <option value="MAE">MAE (Mean Absolute Error)</option>
+                                <option value="RMSLE">RMSLE (Root Mean Squared Log Error)</option>
+                            </select>
+                        </div>
+                        <button id="btn-run-automl" class="btn-primary w-full">Run H2O AutoML</button>
+                    </div>
+                </div>
+
+                <!-- AutoML Results -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-3">AutoML Results</h3>
+                    <div id="automl-status-message" class="text-gray-300 mb-4"></div>
+                    <div id="automl-leaderboard-container" class="overflow-x-auto">
+                        <p class="text-center text-gray-400">Leaderboard will appear here after AutoML completes.</p>
+                    </div>
+                </div>
+
+                <!-- Model Details Modal (simplified for demo, can be a full modal) -->
+                <div id="h2o-model-details-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+                        <button class="absolute top-3 right-3 text-gray-400 hover:text-gray-200 text-2xl font-bold" onclick="document.getElementById('h2o-model-details-modal').classList.add('hidden');">&times;</button>
+                        <h4 class="text-xl font-semibold text-white mb-4">H2O Model Details: <span id="model-details-id"></span></h4>
+                        <div id="model-details-content" class="text-gray-300 text-sm space-y-3">
+                            <!-- Details will be loaded here -->
+                        </div>
+                        <div id="model-details-varimp-chart" class="w-full h-[300px] mt-4 bg-gray-900 rounded-md"></div>
+                        <button id="btn-download-mojo" class="btn-primary w-full mt-6">Download MOJO</button>
+                    </div>
+                </div>
+
+                <!-- Model Prediction (Simple example) -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-3">Model Prediction (H2O.ai)</h3>
+                    <p class="text-gray-400 mb-4">Make predictions using a selected H2O.ai model.</p>
+                    <div class="input-group">
+                        <label for="h2o-predict-model-id" class="block text-sm font-medium text-gray-300">Model ID for Prediction:</label>
+                        <input type="text" id="h2o-predict-model-id" placeholder="e.g., AutoML_20231026_123456_StackedEnsemble_AllModels_1" class="mt-1 block w-full">
+                    </div>
+                    <div class="input-group">
+                        <label for="h2o-predict-input-data" class="block text-sm font-medium text-gray-300">Input Data (JSON array of objects):</label>
+                        <textarea id="h2o-predict-input-data" rows="5" class="mt-1 block w-full" placeholder='[{"Average Covered Charges": 15000, "Total Discharges": 50, "Reimbursement Rate": 0.6}]'></textarea>
+                    </div>
+                    <button id="btn-h2o-predict" class="btn-primary w-full">Get Prediction</button>
+                    <div id="h2o-prediction-results" class="mt-4 p-3 bg-gray-800 rounded-md text-sm text-gray-200">
+                        Predictions will appear here.
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 py-4 mt-8">
+            <div class="container text-center text-gray-500 text-sm">
+                &copy; 2025 Healthcare Cost Analysis. All rights reserved.
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Plotly Layout Defaults for Dark Theme ---
+        const plotlyLayoutDefaults = {
+            font: { color: '#e2e8f0', family: 'Inter, sans-serif' },
+            paper_bgcolor: '#2d3748',
+            plot_bgcolor: '#2d3748',
+            xaxis: {
+                showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+            },
+            yaxis: {
+                showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+            },
+            legend: {
+                x: 0.01, y: 0.99,
+                bgcolor: '#2d3748', bordercolor: '#4a5568', borderwidth: 1,
+                font: { color: '#e2e8f0' }
+            },
+            hoverlabel: { bgcolor: '#4a5568', font: { color: '#e2e8f0' } },
+            margin: { t: 50, b: 100, l: 70, r: 20 },
+            responsive: true
+        };
+
+        // --- H2O.ai Integration Logic ---
+
+        let currentAutoMLJobId = null;
+        let h2oAutoMLPollingInterval = null; // To store the interval ID for polling
+
+        // UI Elements
+        const h2oClusterStatusIndicator = document.getElementById('h2o-cluster-status-indicator');
+        const h2oClusterStatusMessage = document.getElementById('h2o-cluster-status-message');
+        const h2oFlowLink = document.getElementById('h2o-flow-link');
+        const btnInitH2O = document.getElementById('btn-init-h2o');
+        const btnUploadDataH2O = document.getElementById('btn-upload-data-h2o');
+        const btnRefreshH2OFrames = document.getElementById('btn-refresh-h2o-frames');
+        const h2oSelectFrame = document.getElementById('h2o-select-frame');
+        const h2oFrameInfo = document.getElementById('h2o-frame-info');
+        const h2oTargetColumnSelect = document.getElementById('h2o-target-column');
+        const h2oProblemTypeSelect = document.getElementById('h2o-problem-type');
+        const h2oIgnoredColumnsDropdown = document.getElementById('h2o-ignored-columns-dropdown');
+        const h2oIgnoredColumnsDisplay = h2oIgnoredColumnsDropdown.querySelector('.selected-items-display');
+        const h2oIgnoredColumnsOptionsContainer = h2oIgnoredColumnsDropdown.querySelector('.options-container');
+        const h2oMaxRuntimeSlider = document.getElementById('h2o-max-runtime');
+        const h2oMaxRuntimeDisplay = document.getElementById('h2o-max-runtime-display');
+        const h2oMaxModelsSlider = document.getElementById('h2o-max-models');
+        const h2oMaxModelsDisplay = document.getElementById('h2o-max-models-display');
+        const h2oSortMetricSelect = document.getElementById('h2o-sort-metric');
+        const btnRunAutoML = document.getElementById('btn-run-automl');
+        const automlStatusMessage = document.getElementById('automl-status-message');
+        const automlLeaderboardContainer = document.getElementById('automl-leaderboard-container');
+        const h2oModelDetailsModal = document.getElementById('h2o-model-details-modal');
+        const modelDetailsIdSpan = document.getElementById('model-details-id');
+        const modelDetailsContentDiv = document.getElementById('model-details-content');
+        const modelDetailsVarimpChartDiv = document.getElementById('model-details-varimp-chart');
+        const btnDownloadMojo = document.getElementById('btn-download-mojo');
+        const h2oPredictModelIdInput = document.getElementById('h2o-predict-model-id');
+        const h2oPredictInputDataTextarea = document.getElementById('h2o-predict-input-data');
+        const btnH2OPredict = document.getElementById('btn-h2o-predict');
+        const h2oPredictionResultsDiv = document.getElementById('h2o-prediction-results');
+
+
+        // Event Listeners
+        btnInitH2O.addEventListener('click', initH2OCluster);
+        btnUploadDataH2O.addEventListener('click', uploadDataToH2O);
+        btnRefreshH2OFrames.addEventListener('click', listH2OFrames);
+        h2oSelectFrame.addEventListener('change', onH2OFrameSelected);
+        btnRunAutoML.addEventListener('click', runAutoML);
+        btnDownloadMojo.addEventListener('click', () => downloadH2OMojo(btnDownloadMojo.dataset.modelId));
+        btnH2OPredict.addEventListener('click', makeH2OPrediction);
+
+        h2oMaxRuntimeSlider.addEventListener('input', () => { h2oMaxRuntimeDisplay.textContent = h2oMaxRuntimeSlider.value; });
+        h2oMaxModelsSlider.addEventListener('input', () => { h2oMaxModelsDisplay.textContent = h2oMaxModelsSlider.value; });
+
+        // Multi-select for ignored columns
+        let selectedIgnoredColumns = new Set();
+        h2oIgnoredColumnsDisplay.addEventListener('click', () => {
+            h2oIgnoredColumnsOptionsContainer.classList.toggle('hidden');
+        });
+        // Close dropdown if clicked outside
+        document.addEventListener('click', (event) => {
+            if (!h2oIgnoredColumnsDropdown.contains(event.target)) {
+                h2oIgnoredColumnsOptionsContainer.classList.add('hidden');
+            }
+        });
+
+        // --- H2O.ai API Calls and Render Functions ---
+
+        async function initH2OCluster() {
+            h2oClusterStatusMessage.textContent = 'Initializing H2O cluster...';
+            h2oClusterStatusIndicator.className = 'h2o-status-indicator unknown';
+            h2oFlowLink.classList.add('opacity-50', 'pointer-events-none');
+            h2oFlowLink.href = '#';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/init', { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    updateH2OClusterStatusUI(data);
+                    if (data.status === 'success' || data.status === 'already_running') {
+                        listH2OFrames(); // Refresh frames after successful init
+                    }
+                } else {
+                    h2oClusterStatusMessage.textContent = `Error: ${data.message || 'Failed to initialize H2O cluster.'}`;
+                    h2oClusterStatusIndicator.className = 'h2o-status-indicator stopped';
+                }
+            } catch (error) {
+                h2oClusterStatusMessage.textContent = `Network error: ${error.message}. Ensure Flask server is running.`;
+                h2oClusterStatusIndicator.className = 'h2o-status-indicator stopped';
+                h2oFlowLink.classList.add('opacity-50', 'pointer-events-none');
+                h2oFlowLink.href = '#';
+                console.error('H2O Init Error:', error);
+            }
+        }
+
+        async function getH2OStatus() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/status');
+                const data = await response.json();
+                updateH2OClusterStatusUI(data);
+            } catch (error) {
+                h2oClusterStatusMessage.textContent = `Network error: ${error.message}. H2O cluster likely stopped.`;
+                h2oClusterStatusIndicator.className = 'h2o-status-indicator stopped';
+                h2oFlowLink.classList.add('opacity-50', 'pointer-events-none');
+                h2oFlowLink.href = '#';
+                console.error('H2O Status Check Error:', error);
+            }
+        }
+
+        function updateH2OClusterStatusUI(statusData) {
+            if (statusData.is_running) {
+                h2oClusterStatusIndicator.className = 'h2o-status-indicator running';
+                h2oClusterStatusMessage.textContent = `H2O Cluster Running (v${statusData.version}). ${statusData.status_message}`;
+                h2oFlowLink.href = statusData.flow_url;
+                h2oFlowLink.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                h2oClusterStatusIndicator.className = 'h2o-status-indicator stopped';
+                h2oClusterStatusMessage.textContent = statusData.status_message;
+                h2oFlowLink.classList.add('opacity-50', 'pointer-events-none');
+                h2oFlowLink.href = '#';
+            }
+        }
+
+        async function uploadDataToH2O() {
+            h2oFrameInfo.innerHTML = '<p class="text-blue-400">Uploading data to H2O...</p>';
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/upload_data', { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    h2oFrameInfo.innerHTML = `<p class="text-green-400">${data.message}</p>`;
+                    listH2OFrames(); // Refresh the list of frames
+                } else {
+                    h2oFrameInfo.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Failed to upload data.'}</p>`;
+                }
+            } catch (error) {
+                h2oFrameInfo.innerHTML = `<p class="text-red-400">Network error: ${error.message}.</p>`;
+                console.error('H2O Upload Data Error:', error);
+            }
+        }
+
+        async function listH2OFrames() {
+            h2oSelectFrame.innerHTML = '<option value="">-- Loading Frames --</option>';
+            h2oTargetColumnSelect.innerHTML = '<option value="">-- Select Target --</option>';
+            h2oIgnoredColumnsOptionsContainer.innerHTML = '';
+            h2oIgnoredColumnsDisplay.innerHTML = '<span class="placeholder-text">Select columns to ignore...</span>';
+            selectedIgnoredColumns.clear();
+            h2oFrameInfo.textContent = '';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/list_frames');
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.frames && data.frames.length > 0) {
+                        h2oSelectFrame.innerHTML = '<option value="">-- Select a Frame --</option>';
+                        data.frames.forEach(frame => {
+                            const option = document.createElement('option');
+                            option.value = frame.frame_id;
+                            option.textContent = `${frame.frame_id} (${frame.rows} rows, ${frame.cols} cols)`;
+                            h2oSelectFrame.appendChild(option);
+                        });
+                        // Store full frame data for later use (e.g., column names)
+                        h2oSelectFrame.dataset.frames = JSON.stringify(data.frames);
+                    } else {
+                        h2oSelectFrame.innerHTML = '<option value="">-- No Frames Available --</option>';
+                        h2oFrameInfo.innerHTML = '<p class="text-yellow-400">No data frames found in H2O. Upload data first.</p>';
+                    }
+                } else {
+                    h2oSelectFrame.innerHTML = '<option value="">-- Error Loading Frames --</option>';
+                    h2oFrameInfo.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Failed to list frames.'}</p>`;
+                }
+            } catch (error) {
+                h2oSelectFrame.innerHTML = '<option value="">-- Network Error --</option>';
+                h2oFrameInfo.innerHTML = `<p class="text-red-400">Network error: ${error.message}.</p>`;
+                console.error('H2O List Frames Error:', error);
+            }
+        }
+
+        function onH2OFrameSelected() {
+            const selectedFrameId = h2oSelectFrame.value;
+            h2oTargetColumnSelect.innerHTML = '<option value="">-- Select Target --</option>';
+            h2oIgnoredColumnsOptionsContainer.innerHTML = '';
+            h2oIgnoredColumnsDisplay.innerHTML = '<span class="placeholder-text">Select columns to ignore...</span>';
+            selectedIgnoredColumns.clear();
+
+            if (selectedFrameId) {
+                const allFrames = JSON.parse(h2oSelectFrame.dataset.frames);
+                const selectedFrame = allFrames.find(f => f.frame_id === selectedFrameId);
+                if (selectedFrame && selectedFrame.columns) {
+                    selectedFrame.columns.forEach(col => {
+                        const option = document.createElement('option');
+                        option.value = col;
+                        option.textContent = col;
+                        h2oTargetColumnSelect.appendChild(option);
+
+                        // Add to ignored columns multi-select
+                        const checkboxId = `ignored-col-${col}`;
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.innerHTML = `<input type="checkbox" id="${checkboxId}" value="${col}"> ${col}`;
+                        label.querySelector('input').addEventListener('change', (event) => {
+                            if (event.target.checked) {
+                                selectedIgnoredColumns.add(col);
+                            } else {
+                                selectedIgnoredColumns.delete(col);
+                            }
+                            updateIgnoredColumnsDisplay();
+                        });
+                        h2oIgnoredColumnsOptionsContainer.appendChild(label);
+                    });
+                }
+            }
+        }
+
+        function updateIgnoredColumnsDisplay() {
+            h2oIgnoredColumnsDisplay.innerHTML = '';
+            if (selectedIgnoredColumns.size === 0) {
+                h2oIgnoredColumnsDisplay.innerHTML = '<span class="placeholder-text">Select columns to ignore...</span>';
+            } else {
+                selectedIgnoredColumns.forEach(col => {
+                    const tag = document.createElement('span');
+                    tag.className = 'selected-item-tag';
+                    tag.innerHTML = `${col} <span class="remove-tag" data-col="${col}">&times;</span>`;
+                    tag.querySelector('.remove-tag').addEventListener('click', (event) => {
+                        const colToRemove = event.target.dataset.col;
+                        selectedIgnoredColumns.delete(colToRemove);
+                        document.getElementById(`ignored-col-${colToRemove}`).checked = false;
+                        updateIgnoredColumnsDisplay();
+                        event.stopPropagation(); // Prevent dropdown from toggling
+                    });
+                    h2oIgnoredColumnsDisplay.appendChild(tag);
+                });
+            }
+        }
+
+
+        async function runAutoML() {
+            const frameId = h2oSelectFrame.value;
+            const targetColumn = h2oTargetColumnSelect.value;
+            const isClassification = h2oProblemTypeSelect.value === 'classification';
+            const maxRuntimeSecs = parseInt(h2oMaxRuntimeSlider.value);
+            const maxModels = parseInt(h2oMaxModelsSlider.value);
+            const sortMetric = h2oSortMetricSelect.value;
+            const ignoredColumns = Array.from(selectedIgnoredColumns);
+
+            if (!frameId || !targetColumn) {
+                automlStatusMessage.innerHTML = '<p class="text-red-400">Please select an H2OFrame and a target column.</p>';
+                return;
+            }
+
+            automlStatusMessage.innerHTML = '<p class="text-blue-400">Starting AutoML job... This might take a moment.</p>';
+            automlLeaderboardContainer.innerHTML = '<p class="text-center text-gray-400">Leaderboard will appear here after AutoML completes.</p>';
+            btnRunAutoML.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/run_automl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        frame_id: frameId,
+                        target_column: targetColumn,
+                        ignored_columns: ignoredColumns,
+                        max_runtime_secs: maxRuntimeSecs,
+                        max_models: maxModels,
+                        sort_metric: sortMetric,
+                        is_classification: isClassification
+                    }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    currentAutoMLJobId = data.job_id;
+                    automlStatusMessage.innerHTML = `<p class="text-green-400">${data.message} Job ID: <strong>${data.job_id}</strong></p>`;
+                    // Start polling for status
+                    if (h2oAutoMLPollingInterval) clearInterval(h2oAutoMLPollingInterval); // Clear any existing interval
+                    h2oAutoMLPollingInterval = setInterval(() => getAutoMLStatusAndLeaderboard(currentAutoMLJobId), 5000); // Poll every 5 seconds
+                } else {
+                    automlStatusMessage.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Failed to start AutoML.'}</p>`;
+                    btnRunAutoML.disabled = false;
+                }
+            } catch (error) {
+                automlStatusMessage.innerHTML = `<p class="text-red-400">Network error: ${error.message}.</p>`;
+                btnRunAutoML.disabled = false;
+                console.error('Run AutoML Error:', error);
+            }
+        }
+
+        async function getAutoMLStatusAndLeaderboard(jobId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/h2o/get_automl_status/${jobId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    automlStatusMessage.innerHTML = `<p class="text-blue-400">AutoML Job Status (ID: ${jobId}): ${data.message}</p>`;
+                    if (data.status === 'completed') {
+                        clearInterval(h2oAutoMLPollingInterval);
+                        automlStatusMessage.innerHTML = `<p class="green-message">AutoML Job Completed! Leader: <strong>${data.leader_model_id || 'N/A'}</strong></p>`;
+                        renderAutoMLLeaderboard(data.leaderboard);
+                        btnRunAutoML.disabled = false; // Re-enable button
+                    } else if (data.status === 'running') {
+                        // Update with leader if available
+                        if (data.leader_model_id) {
+                            automlStatusMessage.innerHTML += `<p class="text-gray-300">Current Leader: ${data.leader_model_id}</p>`;
+                        }
+                    }
+                } else {
+                    clearInterval(h2oAutoMLPollingInterval);
+                    automlStatusMessage.innerHTML = `<p class="text-red-400">Error checking AutoML status: ${data.error || 'Unknown error.'}</p>`;
+                    btnRunAutoML.disabled = false;
+                }
+            } catch (error) {
+                clearInterval(h2oAutoMLPollingInterval);
+                automlStatusMessage.innerHTML = `<p class="text-red-400">Network error checking AutoML status: ${error.message}.</p>`;
+                btnRunAutoML.disabled = false;
+                console.error('Get AutoML Status Error:', error);
+            }
+        }
+
+        function renderAutoMLLeaderboard(leaderboardData) {
+            if (!leaderboardData || leaderboardData.length === 0) {
+                automlLeaderboardContainer.innerHTML = '<p class="text-yellow-400">No models found in the leaderboard.</p>';
+                return;
+            }
+
+            let html = `
+                <table class="min-w-full h2o-leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Model ID</th>
+                            <th>Algorithm</th>
+                            <th>Metric (${h2oSortMetricSelect.value})</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            leaderboardData.forEach(model => {
+                const metricValue = model[h2oSortMetricSelect.value.toLowerCase()] !== undefined ? model[h2oSortMetricSelect.value.toLowerCase()].toFixed(4) : 'N/A';
+                html += `
+                    <tr>
+                        <td>${model.model_id}</td>
+                        <td>${model.algo}</td>
+                        <td>${metricValue}</td>
+                        <td>
+                            <button onclick="viewH2OModelDetails('${model.model_id}')">View Details</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            html += `
+                    </tbody>
+                </table>
+            `;
+            automlLeaderboardContainer.innerHTML = html;
+        }
+
+        async function viewH2OModelDetails(modelId) {
+            modelDetailsIdSpan.textContent = modelId;
+            modelDetailsContentDiv.innerHTML = '<p class="text-center text-blue-400">Loading model details...</p>';
+            modelDetailsVarimpChartDiv.innerHTML = ''; // Clear previous chart
+            btnDownloadMojo.disabled = true;
+            btnDownloadMojo.dataset.modelId = modelId; // Store model ID for download
+
+            h2oModelDetailsModal.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/h2o/get_model_details/${modelId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    let detailsHtml = `
+                        <p><strong>Algorithm:</strong> ${data.algo}</p>
+                        <p><strong>Model Category:</strong> ${data.model_category}</p>
+                        <h5 class="text-md font-semibold text-white mt-4 mb-2">Metrics:</h5>
+                        <pre class="bg-gray-900 p-2 rounded-md overflow-x-auto">${JSON.stringify(data.metrics, null, 2)}</pre>
+                    `;
+
+                    if (data.roc_curve_data) {
+                        detailsHtml += `<p><strong>AUC:</strong> ${data.roc_curve_data.auc ? data.roc_curve_data.auc.toFixed(4) : 'N/A'}</p>`;
+                        if (data.roc_curve_data.warning) {
+                             detailsHtml += `<p class="text-yellow-400 text-sm">${data.roc_curve_data.warning}</p>`;
+                        }
+                        // To plot ROC curve, we'd need FPR/TPR points from backend
+                    }
+
+                    modelDetailsContentDiv.innerHTML = detailsHtml;
+
+                    // Render Variable Importances
+                    if (data.var_importances && data.var_importances.length > 0) {
+                        const varImpPlotData = [{
+                            x: data.var_importances.map(d => d.percentage),
+                            y: data.var_importances.map(d => d.variable).reverse(), // Reverse for horizontal bar chart
+                            type: 'bar',
+                            orientation: 'h',
+                            marker: { color: '#48bb78' }, // Green
+                            hovertemplate: `<b>Feature:</b> %{y}<br><b>Importance:</b> %{x:.2f}%<extra></extra>`
+                        }];
+                        const varImpLayout = {
+                            ...plotlyLayoutDefaults,
+                            title: { text: 'Variable Importances', font: plotlyLayoutDefaults.font },
+                            xaxis: { title: 'Relative Importance (%)', ...plotlyLayoutDefaults.xaxis },
+                            yaxis: { title: 'Variable', ...plotlyLayoutDefaults.yaxis, automargin: true },
+                            margin: { t: 50, b: 50, l: 150, r: 20 }, // Adjust margins for horizontal bars
+                            showlegend: false
+                        };
+                        Plotly.newPlot(modelDetailsVarimpChartDiv, varImpPlotData, varImpLayout, { responsive: true, displayModeBar: false });
+                    } else {
+                        modelDetailsVarimpChartDiv.innerHTML = '<p class="text-yellow-400 text-center p-4">No variable importances available for this model.</p>';
+                    }
+                    btnDownloadMojo.disabled = false;
+
+                } else {
+                    modelDetailsContentDiv.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Failed to load model details.'}</p>`;
+                }
+            } catch (error) {
+                modelDetailsContentDiv.innerHTML = `<p class="text-red-400">Network error: ${error.message}.</p>`;
+                console.error('Get Model Details Error:', error);
+            }
+        }
+
+        async function downloadH2OMojo(modelId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/h2o/download_mojo/${modelId}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${modelId}.zip`; // Filename from backend
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    // Using custom modal for alerts
+                    showCustomAlert('MOJO file download initiated!', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showCustomAlert(`Error downloading MOJO: ${errorData.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showCustomAlert(`Network error during MOJO download: ${error.message}`, 'error');
+                console.error('MOJO Download Error:', error);
+            }
+        }
+
+        async function makeH2OPrediction() {
+            const modelId = h2oPredictModelIdInput.value;
+            let inputData;
+            try {
+                inputData = JSON.parse(h2oPredictInputDataTextarea.value);
+                if (!Array.isArray(inputData) || inputData.length === 0) {
+                    throw new Error("Input data must be a non-empty JSON array of objects.");
+                }
+            } catch (e) {
+                h2oPredictionResultsDiv.innerHTML = `<p class="text-red-400">Invalid JSON input data: ${e.message}</p>`;
+                return;
+            }
+
+            if (!modelId) {
+                h2oPredictionResultsDiv.innerHTML = '<p class="text-red-400">Please enter a Model ID for prediction.</p>';
+                return;
+            }
+
+            h2oPredictionResultsDiv.innerHTML = '<p class="text-blue-400">Generating predictions...</p>';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/h2o/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_id: modelId, input_data: inputData }),
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    let html = '<h5 class="text-md font-semibold text-white mb-2">Predictions:</h5>';
+                    html += `<pre class="bg-gray-900 p-2 rounded-md overflow-x-auto">${JSON.stringify(data.predictions, null, 2)}</pre>`;
+                    h2oPredictionResultsDiv.innerHTML = html;
+                } else {
+                    h2oPredictionResultsDiv.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Failed to get predictions.'}</p>`;
+                }
+            } catch (error) {
+                h2oPredictionResultsDiv.innerHTML = `<p class="text-red-400">Network error: ${error.message}.</p>`;
+                console.error('H2O Prediction Error:', error);
+            }
+        }
+
+        // Custom Alert/Message Box (instead of alert())
+        function showCustomAlert(message, type = 'info') {
+            let alertBox = document.getElementById('custom-alert-box');
+            if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.id = 'custom-alert-box';
+                alertBox.className = 'fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg text-white font-semibold transition-all duration-300 ease-in-out transform translate-x-full opacity-0';
+                alertBox.style.minWidth = '250px';
+                alertBox.style.maxWidth = '400px';
+                document.body.appendChild(alertBox);
+            }
+
+            alertBox.textContent = message;
+            alertBox.className = 'fixed top-4 right-4 z-50 p-4 rounded-md shadow-lg text-white font-semibold transition-all duration-300 ease-in-out';
+
+            // Set background based on type
+            if (type === 'success') {
+                alertBox.style.backgroundColor = '#22c55e'; // green-500
+            } else if (type === 'error') {
+                alertBox.style.backgroundColor = '#ef4444'; // red-500
+            } else if (type === 'warning') {
+                alertBox.style.backgroundColor = '#f59e0b'; // amber-500
+            } else {
+                alertBox.style.backgroundColor = '#3b82f6'; // blue-500 (info)
+            }
+
+            // Show the alert
+            alertBox.style.transform = 'translateX(0)';
+            alertBox.style.opacity = '1';
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                alertBox.style.transform = 'translateX(100%)';
+                alertBox.style.opacity = '0';
+            }, 5000);
+        }
+
+
+        // Initial setup for sliders and H2O.ai status on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // H2O.ai sliders
+            h2oMaxRuntimeDisplay.textContent = h2oMaxRuntimeSlider.value;
+            h2oMaxModelsDisplay.textContent = h2oMaxModelsSlider.value;
+
+            // Initial H2O status check and frame listing
+            getH2OStatus();
+            listH2OFrames();
+        });
+
+    </script>
+</body>
+</html>

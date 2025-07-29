@@ -1,0 +1,891 @@
+<!-- templates/machine_learning.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Learning - Healthcare Cost Analysis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        /* Consistent styles with other pages */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text color */
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #2d3748; /* Slightly lighter dark for cards */
+            border-radius: 0.5rem; /* Rounded corners */
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #4a5568; /* Subtle border */
+        }
+        .input-group label {
+            color: #cbd5e0; /* Slightly darker label text */
+            margin-bottom: 0.5rem;
+            display: block;
+            font-weight: 500;
+        }
+        .input-group select, .input-group input[type="number"],
+        .input-group input[type="range"], .input-group input[type="checkbox"] + label {
+            background-color: #4a5568;
+            border: 1px solid #6b7280;
+            color: #e2e8f0;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .input-group select:focus, .input-group input[type="number"]:focus,
+        .input-group input[type="range"]:focus, .input-group input[type="checkbox"] + label:focus-within {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.5);
+        }
+        .btn-primary {
+            background-color: #3182ce;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2c5282;
+        }
+        .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+            color: #a0aec0;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            background-color: #4a5568;
+            color: #e2e8f0;
+        }
+        .nav-link.active {
+            background-color: #3182ce;
+            color: white;
+        }
+        .flash-message {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        .flash-message.success {
+            background-color: #2f855a;
+            color: white;
+        }
+        .flash-message.error {
+            background-color: #c53030;
+            color: white;
+        }
+        .flash-message.warning {
+            background-color: #d69e2e;
+            color: white;
+        }
+        .flash-message.info {
+            background-color: #3182ce;
+            color: white;
+        }
+        /* Plotly specific overrides for dark theme */
+        .js-plotly-plot .plotly .modebar-btn {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+            border: 1px solid #4a5568 !important;
+        }
+        .js-plotly-plot .plotly .modebar-btn:hover {
+            background-color: #4a5568 !important;
+        }
+        .js-plotly-plot .plotly .g-gtitle {
+            fill: #e2e8f0 !important;
+        }
+        .js-plotly-plot .plotly .xtick text, .js-plotly-plot .plotly .ytick text {
+            fill: #a0aec0 !important;
+        }
+        .js-plotly-plot .plotly .axis-title {
+            fill: #e2e8f0 !important;
+        }
+        .js-plotly-plot .plotly .legend .item text {
+            fill: #e2e8f0 !important;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        /* Range slider track and thumb styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #4a5568;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3182ce;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.5);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3182ce;
+            cursor: pointer;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.5);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-md py-4">
+            <div class="container flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-teal-400">Healthcare Cost Analysis</h1>
+                <nav>
+                    <ul class="flex space-x-4">
+                        <li><a href="{{ url_for('data_access') }}" class="nav-link {% if current_page == 'data_access' %}active{% endif %}">Data Access</a></li>
+                        <li><a href="{{ url_for('data_engineering') }}" class="nav-link {% if current_page == 'data_engineering' %}active{% endif %}">Data Engineering</a></li>
+                        <li><a href="{{ url_for('machine_learning') }}" class="nav-link {% if current_page == 'machine_learning' %}active{% endif %}">Machine Learning</a></li>
+                        <li><a href="{{ url_for('h2o_ai_integration') }}" class="nav-link {% if current_page == 'h2o_ai_integration' %}active{% endif %}">Run H2O.ai</a></li>
+                        <li><a href="{{ url_for('index') }}" class="nav-link {% if current_page == 'analysis_report' %}active{% endif %}">Analysis Report</a></li>
+                        <li><a href="{{ url_for('job_status_review') }}" class="nav-link {% if current_page == 'job_status_review' %}active{% endif %}">Job Status Review</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-grow container py-8">
+            <h2 class="text-2xl font-semibold text-teal-300 mb-6">Machine Learning Models</h2>
+
+            <!-- Data Source Indicator -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- 1. Predictive Pricing Models -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-4">1. Predictive Pricing Model (Random Forest Regression)</h3>
+                    <p class="text-gray-400 mb-4">Predict Average Total Payments or Reimbursement Rates based on other features.</p>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="pp-target-variable" class="block text-sm font-medium text-gray-300">Target Variable:</label>
+                            <select id="pp-target-variable" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="Average Total Payments">Average Total Payments</option>
+                                <option value="Reimbursement Rate">Reimbursement Rate</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="pp-n-estimators" class="block text-sm font-medium text-gray-300">Number of Estimators: <span id="pp-n-estimators-display">100</span></label>
+                            <input type="range" id="pp-n-estimators" min="50" max="200" step="10" value="100" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="pp-max-depth" class="block text-sm font-medium text-gray-300">Max Depth: <span id="pp-max-depth-display">10</span></label>
+                            <input type="range" id="pp-max-depth" min="5" max="20" step="1" value="10" class="w-full">
+                        </div>
+                        <button id="run-pp-model" class="btn-primary w-full">Run Predictive Pricing Model</button>
+                    </div>
+                    <div id="pp-results" class="mt-6 p-4 bg-gray-700 rounded-md text-sm text-gray-200">
+                        <p class="text-center text-gray-400">Results will appear here...</p>
+                    </div>
+                </div>
+
+                <!-- 2. Hospital Performance Clustering -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-4">2. Hospital Performance Clustering (K-Means)</h3>
+                    <p class="text-gray-400 mb-4">Group hospitals by efficiency and cost patterns.</p>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="hpc-n-clusters" class="block text-sm font-medium text-gray-300">Number of Clusters: <span id="hpc-n-clusters-display">3</span></label>
+                            <input type="range" id="hpc-n-clusters" min="2" max="7" step="1" value="3" class="w-full">
+                        </div>
+                        <div class="input-group">
+                            <label class="block text-sm font-medium text-gray-300">Features for Clustering:</label>
+                            <div class="flex flex-wrap gap-2 mt-1">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="hpc-feature" value="Average Covered Charges" checked class="form-checkbox text-blue-500 rounded">
+                                    <span class="ml-2 text-gray-300 text-sm">Avg. Charges</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="hpc-feature" value="Reimbursement Rate" checked class="form-checkbox text-blue-500 rounded">
+                                    <span class="ml-2 text-gray-300 text-sm">Reimbursement Rate</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="hpc-feature" value="Total Discharges" checked class="form-checkbox text-blue-500 rounded">
+                                    <span class="ml-2 text-gray-300 text-sm">Total Discharges</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="hpc-feature" value="Average Total Payments" class="form-checkbox text-blue-500 rounded">
+                                    <span class="ml-2 text-gray-300 text-sm">Avg. Payments</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" name="hpc-feature" value="Cost Per Discharge" class="form-checkbox text-blue-500 rounded">
+                                    <span class="ml-2 text-gray-300 text-sm">Cost Per Discharge</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button id="run-hpc-model" class="btn-primary w-full">Run Clustering Model</button>
+                    </div>
+                    <div id="hpc-results" class="mt-6 p-4 bg-gray-700 rounded-md text-sm text-gray-200">
+                        <p class="text-center text-gray-400">Results will appear here...</p>
+                        <div id="hpc-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Geographic Cost Analysis -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-4">3. Geographic Cost Analysis (ANOVA & Clustering)</h3>
+                    <p class="text-gray-400 mb-4">Understand regional healthcare cost variations and group similar regions.</p>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="gca-group-by" class="block text-sm font-medium text-gray-300">Group By:</label>
+                            <select id="gca-group-by" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="Provider State">Provider State</option>
+                                <option value="Hospital Referral Region">Hospital Referral Region</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="gca-metric" class="block text-sm font-medium text-gray-300">Target Metric for ANOVA:</label>
+                            <select id="gca-metric" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="Average Covered Charges">Average Covered Charges</option>
+                                <option value="Average Total Payments">Average Total Payments</option>
+                                <option value="Reimbursement Rate">Reimbursement Rate</option>
+                                <option value="Total Discharges">Total Discharges</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="gca-n-clusters" class="block text-sm font-medium text-gray-300">Number of Geo Clusters: <span id="gca-n-clusters-display">3</span></label>
+                            <input type="range" id="gca-n-clusters" min="2" max="5" step="1" value="3" class="w-full">
+                        </div>
+                        <button id="run-gca-model" class="btn-primary w-full">Run Geographic Analysis</button>
+                    </div>
+                    <div id="gca-results" class="mt-6 p-4 bg-gray-700 rounded-md text-sm text-gray-200">
+                        <p class="text-center text-gray-400">Results will appear here...</p>
+                        <div id="gca-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+                    </div>
+                </div>
+
+                <!-- 4. Medical Classification Optimization -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-4">4. Medical Classification Optimization</h3>
+                    <p class="text-gray-400 mb-4">Predict which medical classifications are 'high volume' and identify key drivers.</p>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="mco-model-type" class="block text-sm font-medium text-gray-300">Select Model:</label>
+                            <select id="mco-model-type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="Decision Tree">Decision Tree</option>
+                                <option value="Logistic Regression">Logistic Regression</option>
+                                <option value="SVM">SVM</option> <!-- Added SVM option -->
+                                <!-- Add more models here as needed -->
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="mco-threshold" class="block text-sm font-medium text-gray-300">High Volume Threshold (Total Discharges): <span id="mco-threshold-display">100</span></label>
+                            <input type="range" id="mco-threshold" min="50" max="500" step="50" value="100" class="w-full">
+                        </div>
+                        <button id="run-mco-model" class="btn-primary w-full">Run Classification Optimization</button>
+                    </div>
+                    <div id="mco-results" class="mt-6 p-4 bg-gray-700 rounded-md text-sm text-gray-200">
+                        <p class="text-center text-gray-400">Results will appear here...</p>
+                    </div>
+                </div>
+
+                <!-- 5. Anomaly Detection for Fraud/Waste -->
+                <div class="card">
+                    <h3 class="text-xl font-semibold text-white mb-4">5. Anomaly Detection (Isolation Forest)</h3>
+                    <p class="text-gray-400 mb-4">Identify unusual billing or cost patterns for fraud/waste detection.</p>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="ad-contamination" class="block text-sm font-medium text-gray-300">Contamination (Expected Outlier Proportion): <span id="ad-contamination-display">0.05</span></label>
+                            <input type="range" id="ad-contamination" min="0.01" max="0.1" step="0.01" value="0.05" class="w-full">
+                        </div>
+                        <button id="run-ad-model" class="btn-primary w-full">Run Anomaly Detection</button>
+                    </div>
+                    <div id="ad-results" class="mt-6 p-4 bg-gray-700 rounded-md text-sm text-gray-200">
+                        <p class="text-center text-gray-400">Results will appear here...</p>
+                        <div id="ad-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 py-4 mt-8">
+            <div class="container text-center text-gray-500 text-sm">
+                &copy; 2025 Healthcare Cost Analysis. All rights reserved.
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Helper Function for API Calls ---
+        async function runMLModel(endpoint, params, resultDivId, renderFunction) {
+            const resultDiv = document.getElementById(resultDivId);
+            resultDiv.innerHTML = '<p class="text-center text-blue-400">Running model... Please wait.</p>';
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/api/ml/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    renderFunction(data, resultDiv);
+                } else {
+                    resultDiv.innerHTML = `<p class="text-red-400">Error: ${data.error || 'Something went wrong.'}</p>`;
+                    console.error('ML Model Error:', data.error);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-400">Network error: ${error.message}. Ensure Flask server is running.</p>`;
+                console.error('Fetch error:', error);
+            }
+        }
+
+        // --- 1. Predictive Pricing Model ---
+        const ppNEstimatorsSlider = document.getElementById('pp-n-estimators');
+        const ppNEstimatorsDisplay = document.getElementById('pp-n-estimators-display');
+        const ppMaxDepthSlider = document.getElementById('pp-max-depth');
+        const ppMaxDepthDisplay = document.getElementById('pp-max-depth-display');
+        const ppTargetVariable = document.getElementById('pp-target-variable');
+        const runPpModelBtn = document.getElementById('run-pp-model');
+
+        ppNEstimatorsSlider.addEventListener('input', () => { ppNEstimatorsDisplay.textContent = ppNEstimatorsSlider.value; });
+        ppMaxDepthSlider.addEventListener('input', () => { ppMaxDepthDisplay.textContent = ppMaxDepthSlider.value; });
+
+        runPpModelBtn.addEventListener('click', () => {
+            const params = {
+                target_variable: ppTargetVariable.value,
+                n_estimators: parseInt(ppNEstimatorsSlider.value),
+                max_depth: parseInt(ppMaxDepthSlider.value)
+            };
+            runMLModel('predictive_pricing', params, 'pp-results', renderPredictivePricingResults);
+        });
+
+        function renderPredictivePricingResults(data, resultDiv) {
+            let html = `
+                <h4 class="text-lg font-semibold text-white mb-2">Results for ${data.target_variable} Prediction:</h4>
+                <p><strong>R2 Score:</strong> ${data.r2_score ? data.r2_score.toFixed(4) : 'N/A'}</p>
+                <p><strong>Mean Absolute Error (MAE):</strong> ${data.mae ? data.mae.toFixed(2) : 'N/A'}</p>
+                <h5 class="text-md font-semibold text-white mt-4 mb-2">Top Feature Importances:</h5>
+                <ul class="list-disc list-inside ml-4">
+            `;
+            if (data.feature_importances) {
+                for (const [feature, importance] of Object.entries(data.feature_importances)) {
+                    html += `<li>${feature}: ${importance.toFixed(4)}</li>`;
+                }
+            } else {
+                html += `<li>No feature importances available.</li>`;
+            }
+            html += `</ul>`;
+            resultDiv.innerHTML = html;
+        }
+
+        // --- 2. Hospital Performance Clustering ---
+        const hpcNClustersSlider = document.getElementById('hpc-n-clusters');
+        const hpcNClustersDisplay = document.getElementById('hpc-n-clusters-display');
+        const hpcFeatureCheckboxes = document.querySelectorAll('input[name="hpc-feature"]');
+        const runHpcModelBtn = document.getElementById('run-hpc-model');
+        const hpcChartDiv = document.getElementById('hpc-chart');
+
+        hpcNClustersSlider.addEventListener('input', () => { hpcNClustersDisplay.textContent = hpcNClustersSlider.value; });
+
+        runHpcModelBtn.addEventListener('click', () => {
+            const selectedFeatures = Array.from(hpcFeatureCheckboxes)
+                                          .filter(cb => cb.checked)
+                                          .map(cb => cb.value);
+            if (selectedFeatures.length < 2) {
+                document.getElementById('hpc-results').innerHTML = '<p class="text-red-400">Please select at least two features for clustering.</p>';
+                return;
+            }
+            const params = {
+                n_clusters: parseInt(hpcNClustersSlider.value),
+                clustering_features: selectedFeatures
+            };
+            runMLModel('hospital_clustering', params, 'hpc-results', renderHospitalClusteringResults);
+        });
+
+        function renderHospitalClusteringResults(data, resultDiv) {
+            let html = `
+                <h4 class="text-lg font-semibold text-white mb-2">Cluster Centroids:</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-gray-800 rounded-md text-left text-sm">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="py-2 px-4 border-b border-gray-600">Cluster</th>
+                                ${data.clustering_features ? data.clustering_features.map(f => `<th class="py-2 px-4 border-b border-gray-600">${f}</th>`).join('') : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            for (const clusterId in data.centroids) {
+                const centroid = data.centroids[clusterId];
+                html += `<tr><td class="py-2 px-4 border-b border-gray-700">${clusterId}</td>`;
+                if (data.clustering_features) {
+                    data.clustering_features.forEach(f => {
+                        html += `<td class="py-2 px-4 border-b border-gray-700">${centroid[f] ? centroid[f].toFixed(2) : 'N/A'}</td>`;
+                    });
+                }
+                html += `</tr>`;
+            }
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <h4 class="text-lg font-semibold text-white mt-4 mb-2">Cluster Visualization:</h4>
+                <div id="hpc-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+            `;
+            resultDiv.innerHTML = html;
+
+            // Render scatter plot for clustering
+            const scatterPlotData = [];
+            // Define a set of distinct colors for clusters
+            const clusterColors = [
+                '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+                '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+            ];
+
+            // Check if scatter_data exists and has enough points for plotting
+            if (data.scatter_data && data.scatter_data.length > 0 && data.x_axis_feature && data.y_axis_feature) {
+                for (let i = 0; i < data.n_clusters; i++) {
+                    const clusterPoints = data.scatter_data.filter(d => d.cluster === i);
+                    if (clusterPoints.length > 0) { // Only add trace if there are points in the cluster
+                        scatterPlotData.push({
+                            x: clusterPoints.map(d => d[data.x_axis_feature]),
+                            y: clusterPoints.map(d => d[data.y_axis_feature]),
+                            mode: 'markers',
+                            type: 'scatter',
+                            name: `Cluster ${i}`,
+                            marker: { size: 8, color: clusterColors[i % clusterColors.length], opacity: 0.7 },
+                            hovertemplate: `<b>Cluster: ${i}</b><br>${data.x_axis_feature}: %{x:.2f}<br>${data.y_axis_feature}: %{y:.2f}<extra></extra>`
+                        });
+                    }
+                }
+            } else {
+                 resultDiv.querySelector('#hpc-chart').innerHTML = '<p class="text-yellow-400 text-center p-4">Cannot plot cluster visualization: Insufficient data or selected features for scatter plot.</p>';
+                 return; // Exit if no data to plot
+            }
+
+
+            const layout = {
+                title: {
+                    text: `Hospital Clusters by ${data.x_axis_feature} vs. ${data.y_axis_feature}`,
+                    font: { color: '#e2e8f0', family: 'Inter, sans-serif' }
+                },
+                xaxis: {
+                    title: data.x_axis_feature,
+                    showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                    tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                },
+                yaxis: {
+                    title: data.y_axis_feature,
+                    showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                    tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                },
+                paper_bgcolor: '#2d3748', plot_bgcolor: '#2d3748',
+                font: { color: '#e2e8f0', family: 'Inter, sans-serif' },
+                hoverlabel: { bgcolor: '#4a5568', font: { color: '#e2e8f0' } },
+                legend: {
+                    x: 0.01, y: 0.99,
+                    bgcolor: '#2d3748', bordercolor: '#4a5568', borderwidth: 1,
+                    font: { color: '#e2e8f0' }
+                }
+            };
+            Plotly.newPlot(resultDiv.querySelector('#hpc-chart'), scatterPlotData, layout, { responsive: true, displayModeBar: false });
+        }
+
+
+        // --- 3. Geographic Cost Analysis ---
+        const gcaGroupBy = document.getElementById('gca-group-by');
+        const gcaMetric = document.getElementById('gca-metric');
+        const gcaNClustersSlider = document.getElementById('gca-n-clusters');
+        const gcaNClustersDisplay = document.getElementById('gca-n-clusters-display');
+        const runGcaModelBtn = document.getElementById('run-gca-model');
+        const gcaChartDiv = document.getElementById('gca-chart');
+
+        gcaNClustersSlider.addEventListener('input', () => { gcaNClustersDisplay.textContent = gcaNClustersSlider.value; });
+
+        runGcaModelBtn.addEventListener('click', () => {
+            const params = {
+                group_by: gcaGroupBy.value,
+                metric: gcaMetric.value,
+                n_clusters: parseInt(gcaNClustersSlider.value)
+            };
+            runMLModel('geographic_analysis', params, 'gca-results', renderGeographicAnalysisResults);
+        });
+
+        function renderGeographicAnalysisResults(data, resultDiv) {
+            let html = `
+                <h4 class="text-lg font-semibold text-white mb-2">ANOVA Results:</h4>
+                <p><strong>F-Statistic:</strong> ${data.anova_results.f_statistic ? data.anova_results.f_statistic.toFixed(4) : 'N/A'}</p>
+                <p><strong>P-Value:</strong> ${data.anova_results.p_value ? data.anova_results.p_value.toFixed(4) : 'N/A'}</p>
+                <p><strong>Conclusion:</strong> ${data.anova_results.conclusion}</p>
+                <p class="text-gray-400 text-sm mt-1">Comparing ${data.anova_results.target_metric} across ${data.anova_results.group_by}.</p>
+            `;
+
+            if (data.geo_clusters && Object.keys(data.geo_clusters).length > 0) {
+                html += `
+                    <h4 class="text-lg font-semibold text-white mt-4 mb-2">Geographic Cluster Summary (Average Values):</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-gray-800 rounded-md text-left text-sm">
+                            <thead class="bg-gray-700">
+                                <tr>
+                                    <th class="py-2 px-4 border-b border-gray-600">Cluster</th>
+                                    <th class="py-2 px-4 border-b border-gray-600">Avg. Charges</th>
+                                    <th class="py-2 px-4 border-b border-gray-600">Avg. Payments</th>
+                                    <th class="py-2 px-4 border-b border-gray-600">Avg. Discharges</th>
+                                    <th class="py-2 px-4 border-b border-gray-600">Avg. Reimbursement</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                for (const clusterId in data.geo_clusters) {
+                    const cluster = data.geo_clusters[clusterId];
+                    html += `
+                        <tr>
+                            <td class="py-2 px-4 border-b border-gray-700">${clusterId}</td>
+                            <td class="py-2 px-4 border-b border-gray-700">$${cluster.AvgCharges ? cluster.AvgCharges.toFixed(2) : 'N/A'}</td>
+                            <td class="py-2 px-4 border-b border-gray-700">$${cluster.AvgPayments ? cluster.AvgPayments.toFixed(2) : 'N/A'}</td>
+                            <td class="py-2 px-4 border-b border-gray-700">$${cluster.AvgDischarges ? cluster.AvgDischarges.toFixed(2) : 'N/A'}</td>
+                            <td class="py-2 px-4 border-b border-gray-700">${cluster.AvgReimbursement ? cluster.AvgReimbursement.toFixed(2) : 'N/A'}</td>
+                        </tr>
+                    `;
+                }
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <h4 class="text-lg font-semibold text-white mt-4 mb-2">Geographic Cluster Visualization:</h4>
+                    <div id="gca-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+                `;
+            } else if (data.geo_clustering_warning) {
+                html += `<p class="text-yellow-400 mt-4">Warning: ${data.geo_clustering_warning}</p>`;
+            }
+
+            resultDiv.innerHTML = html;
+
+            if (data.geo_chart_data && data.geo_chart_data.length > 0) {
+                const plotData = [];
+                const colors = [
+                    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'
+                ]; // Define distinct colors
+
+                // Group data by cluster for plotting
+                const groupedByCluster = data.geo_chart_data.reduce((acc, item) => {
+                    const cluster = item.geo_cluster;
+                    if (cluster === undefined || cluster === null) { // Handle cases where geo_cluster might be missing
+                        if (!acc['Unclustered']) {
+                            acc['Unclustered'] = { x: [], y: [], text: [], cluster: 'Unclustered' };
+                        }
+                        acc['Unclustered'].x.push(item[data.group_by_geo]);
+                        // FIX: Use chart_target_metric_agg_name for y-axis data
+                        acc['Unclustered'].y.push(item[data.chart_target_metric_agg_name]);
+                        acc['Unclustered'].text.push(`${item[data.group_by_geo]}<br>${data.target_metric}: ${item[data.chart_target_metric_agg_name] ? item[data.chart_target_metric_agg_name].toFixed(2) : 'N/A'}<br>Cluster: Unclustered`);
+                    } else {
+                        if (!acc[cluster]) {
+                            acc[cluster] = { x: [], y: [], text: [], cluster: cluster };
+                        }
+                        acc[cluster].x.push(item[data.group_by_geo]);
+                        // FIX: Use chart_target_metric_agg_name for y-axis data
+                        acc[cluster].y.push(item[data.chart_target_metric_agg_name]);
+                        acc[cluster].text.push(`${item[data.group_by_geo]}<br>${data.target_metric}: ${item[data.chart_target_metric_agg_name] ? item[data.chart_target_metric_agg_name].toFixed(2) : 'N/A'}<br>Cluster: ${cluster}`);
+                    }
+                    return acc;
+                }, {});
+
+                // Sort clusters by ID for consistent color assignment
+                const sortedClusterKeys = Object.keys(groupedByCluster).sort((a, b) => {
+                    if (a === 'Unclustered') return 1; // 'Unclustered' last
+                    if (b === 'Unclustered') return -1;
+                    return parseInt(a) - parseInt(b);
+                });
+
+                sortedClusterKeys.forEach((clusterId, index) => {
+                    const clusterData = groupedByCluster[clusterId];
+                    plotData.push({
+                        x: clusterData.x,
+                        y: clusterData.y,
+                        type: 'bar',
+                        name: (clusterId === 'Unclustered') ? 'Unclustered' : `Cluster ${clusterId}`,
+                        marker: { color: (clusterId === 'Unclustered') ? '#6b7280' : colors[index % colors.length] }, // Gray for unclustered
+                        hovertemplate: '%{text}<extra></extra>'
+                    });
+                });
+
+
+                const layout = {
+                    title: {
+                        text: `${data.target_metric} by ${data.group_by_geo} (Clustered)`,
+                        font: { color: '#e2e8f0', family: 'Inter, sans-serif' }
+                    },
+                    xaxis: {
+                        title: data.group_by_geo,
+                        tickangle: -45, automargin: true,
+                        showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                        tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                    },
+                    yaxis: {
+                        title: data.target_metric,
+                        showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                        tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                    },
+                    barmode: 'group',
+                    paper_bgcolor: '#2d3748', plot_bgcolor: '#2d3748',
+                    font: { color: '#e2e8f0', family: 'Inter, sans-serif' },
+                    hoverlabel: { bgcolor: '#4a5568', font: { color: '#e2e8f0' } },
+                    legend: {
+                        x: 0.01, y: 0.99,
+                        bgcolor: '#2d3748', bordercolor: '#4a5568', borderwidth: 1,
+                        font: { color: '#e2e8f0' }
+                    }
+                };
+                Plotly.newPlot(resultDiv.querySelector('#gca-chart'), plotData, layout, { responsive: true, displayModeBar: false });
+            } else {
+                resultDiv.querySelector('#gca-chart').innerHTML = '<p class="text-yellow-400 text-center p-4">Cannot plot geographic cluster visualization: Insufficient data after aggregation or clustering.</p>';
+            }
+        }
+
+
+        // --- 4. Medical Classification Optimization ---
+        const mcoModelType = document.getElementById('mco-model-type'); // New: Model type selector
+        const mcoThresholdSlider = document.getElementById('mco-threshold');
+        const mcoThresholdDisplay = document.getElementById('mco-threshold-display');
+        const runMcoModelBtn = document.getElementById('run-mco-model');
+
+        mcoThresholdSlider.addEventListener('input', () => { mcoThresholdDisplay.textContent = mcoThresholdSlider.value; });
+
+        runMcoModelBtn.addEventListener('click', () => {
+            const params = {
+                target_threshold: parseInt(mcoThresholdSlider.value),
+                model_type: mcoModelType.value // Send selected model type
+            };
+            runMLModel('classification_optimization', params, 'mco-results', renderMedicalClassificationOptimizationResults);
+        });
+
+        function renderMedicalClassificationOptimizationResults(data, resultDiv) {
+            let html = `
+                <h4 class="text-lg font-semibold text-white mb-2">Classification Report (${data.model_type} - High Volume Threshold: ${data.target_threshold} Discharges):</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-gray-800 rounded-md text-left text-sm">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="py-2 px-4 border-b border-gray-600">Metric</th>
+                                <th class="py-2 px-4 border-b border-gray-600">Low Volume (0)</th>
+                                <th class="py-2 px-4 border-b border-gray-600">High Volume (1)</th>
+                                <th class="py-2 px-4 border-b border-gray-600">Avg/Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            const report = data.classification_report;
+            const metrics = ['precision', 'recall', 'f1-score'];
+            metrics.forEach(metric => {
+                html += `
+                    <tr>
+                        <td class="py-2 px-4 border-b border-gray-700">${metric.charAt(0).toUpperCase() + metric.slice(1)}</td>
+                        <td class="py-2 px-4 border-b border-gray-700">${report['0'] ? report['0'][metric].toFixed(2) : 'N/A'}</td>
+                        <td class="py-2 px-4 border-b border-gray-700">${report['1'] ? report['1'][metric].toFixed(2) : 'N/A'}</td>
+                        <td class="py-2 px-4 border-b border-gray-700">${report['weighted avg'] ? report['weighted avg'][metric].toFixed(2) : 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                            <tr>
+                                <td class="py-2 px-4 border-b border-gray-700">Support</td>
+                                <td class="py-2 px-4 border-b border-gray-700">${report['0'] ? report['0']['support'] : 'N/A'}</td>
+                                <td class="py-2 px-4 border-b border-gray-700">${report['1'] ? report['1']['support'] : 'N/A'}</td>
+                                <td class="py-2 px-4 border-b border-gray-700">${report['macro avg'] ? report['macro avg']['support'] : 'N/A'}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-4 border-b border-gray-700">Accuracy</td>
+                                <td colspan="3" class="py-2 px-4 border-b border-gray-700 text-center">${report['accuracy'] ? report['accuracy'].toFixed(2) : 'N/A'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Display feature importances or coefficients based on model type
+            if (data.model_type === 'Decision Tree' && data.feature_importances && Object.keys(data.feature_importances).length > 0) {
+                html += `
+                    <h5 class="text-md font-semibold text-white mt-4 mb-2">Top Feature Importances (Decision Tree):</h5>
+                    <ul class="list-disc list-inside ml-4">
+                `;
+                for (const [feature, importance] of Object.entries(data.feature_importances)) {
+                    html += `<li>${feature}: ${importance.toFixed(4)}</li>`;
+                }
+                html += `</ul>`;
+            } else if ((data.model_type === 'Logistic Regression' || data.model_type === 'SVM') && data.coefficients && Object.keys(data.coefficients).length > 0) {
+                 html += `
+                    <h5 class="text-md font-semibold text-white mt-4 mb-2">Top Coefficients (${data.model_type}):</h5>
+                    <ul class="list-disc list-inside ml-4">
+                `;
+                for (const [feature, coef] of Object.entries(data.coefficients)) {
+                    html += `<li>${feature}: ${coef.toFixed(4)}</li>`;
+                }
+                html += `</ul>`;
+            } else {
+                html += `<p class="text-gray-400 mt-4">No feature importances or coefficients available for this model/data.</p>`;
+            }
+
+            resultDiv.innerHTML = html;
+        }
+
+        // --- 5. Anomaly Detection ---
+        const adContaminationSlider = document.getElementById('ad-contamination');
+        const adContaminationDisplay = document.getElementById('ad-contamination-display');
+        const runAdModelBtn = document.getElementById('run-ad-model');
+        const adChartDiv = document.getElementById('ad-chart');
+
+        adContaminationSlider.addEventListener('input', () => { adContaminationDisplay.textContent = parseFloat(adContaminationSlider.value).toFixed(2); });
+
+        runAdModelBtn.addEventListener('click', () => {
+            const params = {
+                contamination: parseFloat(adContaminationSlider.value)
+            };
+            runMLModel('anomaly_detection', params, 'ad-results', renderAnomalyDetectionResults);
+        });
+
+        function renderAnomalyDetectionResults(data, resultDiv) {
+            let html = `
+                <h4 class="text-lg font-semibold text-white mb-2">Anomaly Detection Results:</h4>
+                <p><strong>Detected Anomalies:</strong> ${data.anomalies ? data.anomalies.length : 0} records</p>
+                <p><strong>Features Used:</strong> ${data.features_used ? data.features_used.join(', ') : 'N/A'}</p>
+                <h5 class="text-md font-semibold text-white mt-4 mb-2">Top 5 Anomalies (by score):</h5>
+                <ul class="list-disc list-inside ml-4">
+            `;
+            if (data.anomalies && data.anomalies.length > 0) {
+                // Sort by anomaly_score (lower score means more anomalous)
+                const sortedAnomalies = [...data.anomalies].sort((a, b) => a.anomaly_score - b.anomaly_score).slice(0, 5);
+                sortedAnomalies.forEach(anomaly => {
+                    html += `<li>Provider: ${anomaly['Provider Name']} | DRG: ${anomaly['DRG Code']} | Charges: $${anomaly['Average Covered Charges'].toFixed(2)} | Payments: $${anomaly['Average Total Payments'].toFixed(2)} | Score: ${anomaly.anomaly_score.toFixed(4)}</li>`;
+                });
+            } else {
+                html += `<li>No anomalies detected with current parameters.</li>`;
+            }
+            html += `</ul>
+                <h4 class="text-lg font-semibold text-white mt-4 mb-2">Anomaly Visualization:</h4>
+                <div id="ad-chart" class="w-full h-[300px] mt-4 bg-gray-800 rounded-md"></div>
+            `;
+            resultDiv.innerHTML = html;
+
+            // Render scatter plot for anomaly detection
+            if (data.inliers && data.anomalies && data.features_used && data.features_used.length >= 2) {
+                const xFeature = data.features_used[0];
+                const yFeature = data.features_used[1];
+
+                const plotData = [
+                    {
+                        x: data.inliers.map(d => d[xFeature]),
+                        y: data.inliers.map(d => d[yFeature]),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: 'Normal',
+                        marker: { size: 8, color: '#38b2ac', opacity: 0.7 }, // Teal for normal
+                        hovertemplate: `<b>Normal</b><br>${xFeature}: %{x:.2f}<br>${yFeature}: %{y:.2f}<br>Score: %{customdata:.4f}<extra></extra>`,
+                        customdata: data.inliers.map(d => d.anomaly_score)
+                    },
+                    {
+                        x: data.anomalies.map(d => d[xFeature]),
+                        y: data.anomalies.map(d => d[yFeature]),
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: 'Anomaly',
+                        marker: { size: 10, color: '#e53e3e', symbol: 'x', opacity: 0.9, line: { color: 'white', width: 1 } }, // Red X for anomalies
+                        hovertemplate: `<b>Anomaly</b><br>${xFeature}: %{x:.2f}<br>${yFeature}: %{y:.2f}<br>Score: %{customdata:.4f}<extra></extra>`,
+                        customdata: data.anomalies.map(d => d.anomaly_score)
+                    }
+                ];
+
+                const layout = {
+                    title: {
+                        text: `Anomaly Detection: ${xFeature} vs. ${yFeature}`,
+                        font: { color: '#e2e8f0', family: 'Inter, sans-serif' }
+                    },
+                    xaxis: {
+                        title: xFeature,
+                        showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                        tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                    },
+                    yaxis: {
+                        title: yFeature,
+                        showgrid: true, gridcolor: '#4a5568', linecolor: '#6b7280',
+                        tickfont: { color: '#a0aec0' }, titlefont: { color: '#e2e8f0' }
+                    },
+                    paper_bgcolor: '#2d3748', plot_bgcolor: '#2d3748',
+                    font: { color: '#e2e8f0', family: 'Inter, sans-serif' },
+                    hoverlabel: { bgcolor: '#4a5568', font: { color: '#e2e8f0' } },
+                    legend: {
+                        x: 0.01, y: 0.99,
+                        bgcolor: '#2d3748', bordercolor: '#4a5568', borderwidth: 1,
+                        font: { color: '#e2e8f0' }
+                    }
+                };
+                Plotly.newPlot(resultDiv.querySelector('#ad-chart'), plotData, layout, { responsive: true, displayModeBar: false });
+            } else {
+                resultDiv.querySelector('#ad-chart').innerHTML = '<p class="text-yellow-400 text-center p-4">Cannot plot: Need at least two features and data points for visualization.</p>';
+            }
+        }
+        // Initial setup for sliders to display current values
+        document.addEventListener('DOMContentLoaded', () => {
+            ppNEstimatorsDisplay.textContent = ppNEstimatorsSlider.value;
+            ppMaxDepthDisplay.textContent = ppMaxDepthSlider.value;
+            hpcNClustersDisplay.textContent = hpcNClustersSlider.value;
+            gcaNClustersDisplay.textContent = gcaNClustersSlider.value;
+            mcoThresholdDisplay.textContent = mcoThresholdSlider.value;
+            adContaminationDisplay.textContent = parseFloat(adContaminationSlider.value).toFixed(2);
+        });
+
+    </script>
+</body>
+</html>
